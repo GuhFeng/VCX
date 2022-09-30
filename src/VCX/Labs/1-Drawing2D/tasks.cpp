@@ -26,6 +26,18 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
+        srand(time(NULL));
+
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                float     noise = rand() % (10000) / (float) (10000);
+                glm::vec3 color = input[{ x, y }];
+                output.SetAt({ x, y }, {
+                                           color.r + noise > 1 ? 1 : 0,
+                                           color.g + noise > 1 ? 1 : 0,
+                                           color.b + noise > 1 ? 1 : 0,
+                                       });
+            }
     }
 
     void DitheringRandomBlueNoise(
@@ -33,18 +45,130 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB const & input,
         ImageRGB const & noise) {
         // your code here:
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                glm::vec3 color       = input[{ x, y }];
+                glm::vec3 noise_color = noise[{ x, y }];
+                output.SetAt({ x, y }, {
+                                           color.r + noise_color.r > 1 ? 1 : 0,
+                                           color.g + noise_color.g > 1 ? 1 : 0,
+                                           color.b + noise_color.b > 1 ? 1 : 0,
+                                       });
+            }
     }
 
     void DitheringOrdered(
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                glm::vec3 color            = input[{ x, y }];
+                glm::vec3 color_buff[3][3] = {};
+                switch (int(10 * color.r - 0.0000001)) {
+                case 9:
+                    color_buff[0][1].r = 1;
+                case 8:
+                    color_buff[2][2].r = 1;
+                case 7:
+                    color_buff[0][0].r = 1;
+                case 6:
+                    color_buff[2][0].r = 1;
+                case 5:
+                    color_buff[0][2].r = 1;
+                case 4:
+                    color_buff[1][2].r = 1;
+                case 3:
+                    color_buff[2][1].r = 1;
+                case 2:
+                    color_buff[1][0].r = 1;
+                case 1:
+                    color_buff[1][1].r = 1;
+                default:
+                    break;
+                }
+                switch (int(10 * color.g - 0.0000001)) {
+                case 9:
+                    color_buff[0][1].g = 1;
+                case 8:
+                    color_buff[2][2].g = 1;
+                case 7:
+                    color_buff[0][0].g = 1;
+                case 6:
+                    color_buff[2][0].g = 1;
+                case 5:
+                    color_buff[0][2].g = 1;
+                case 4:
+                    color_buff[1][2].g = 1;
+                case 3:
+                    color_buff[2][1].g = 1;
+                case 2:
+                    color_buff[1][0].g = 1;
+                case 1:
+                    color_buff[1][1].g = 1;
+                default:
+                    break;
+                }
+                switch (int(10 * color.b - 0.0000001)) {
+                case 9:
+                    color_buff[0][1].b = 1;
+                case 8:
+                    color_buff[2][2].b = 1;
+                case 7:
+                    color_buff[0][0].b = 1;
+                case 6:
+                    color_buff[2][0].b = 1;
+                case 5:
+                    color_buff[0][2].b = 1;
+                case 4:
+                    color_buff[1][2].b = 1;
+                case 3:
+                    color_buff[2][1].b = 1;
+                case 2:
+                    color_buff[1][0].b = 1;
+                case 1:
+                    color_buff[1][1].b = 1;
+                default:
+                    break;
+                }
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++) {
+                        output.SetAt({ 3 * x + i, 3 * y + j }, { color_buff[i][j].r, color_buff[i][j].g, color_buff[i][j].b });
+                    }
+                }
+            }
     }
 
     void DitheringErrorDiffuse(
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
+        float error[190][220][3] = {};
+        std::memset(error, 0, sizeof(error));
+        for (std::size_t y = 0; y < input.GetSizeY(); ++y)
+            for (std::size_t x = 0; x < input.GetSizeX(); ++x) {
+                glm::vec3 color = input[{ x, y }];
+                color.r         = color.r - error[x + 1][y + 1][0];
+                color.g         = color.g - error[x + 1][y + 1][1];
+                color.b         = color.b - error[x + 1][y + 1][2];
+                output.SetAt({ x, y }, {
+                                           color.r > 0.5 ? 1 : 0,
+                                           color.g > 0.5 ? 1 : 0,
+                                           color.b > 0.5 ? 1 : 0,
+                                       });
+                float tmp_err[3];
+                tmp_err[0] = (color.r > 0.5 ? 1 : 0) - color.r;
+                tmp_err[1] = (color.g > 0.5 ? 1 : 0) - color.g;
+                tmp_err[2] = (color.b > 0.5 ? 1 : 0) - color.b;
+                for (int i = 0; i < 3; i++) {
+                    error[x + 2][y + 1][i] += tmp_err[i] * 7 / 16;
+                    error[x + 1][y + 2][i] += tmp_err[i] * 5 / 16;
+                    error[x + 2][y + 2][i] += tmp_err[i] * 1 / 16;
+                    error[x][y + 2][i] += tmp_err[i] * 3 / 16;
+                }
+
+                // std::printf("%f:%f:%f\n", error[x + 1][y + 1][0], error[x + 1][y + 1][1], error[x + 1][y + 1][2]);
+            }
     }
 
     /******************* 2.Image Filtering *****************/
@@ -130,6 +254,6 @@ namespace VCX::Labs::Drawing2D {
         std::span<glm::vec2> points,
         float const          t) {
         // your code here:
-        return glm::vec2 {0, 0};
+        return glm::vec2 { 0, 0 };
     }
 } // namespace VCX::Labs::Drawing2D
