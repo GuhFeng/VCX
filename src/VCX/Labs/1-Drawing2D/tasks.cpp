@@ -269,7 +269,7 @@ namespace VCX::Labs::Drawing2D {
 
         for (std::size_t y = 0; y < inputFront.GetSizeY(); ++y)
             for (std::size_t x = 0; x < inputFront.GetSizeX(); ++x) {
-                glm::vec3 color = g[y * width + x]; //+  inputFront.GetAt({ x, y });
+                glm::vec3 color = g[y * width + x];
                 output.SetAt({ x + offset.x, y + offset.y }, color);
             }
         delete[] g;
