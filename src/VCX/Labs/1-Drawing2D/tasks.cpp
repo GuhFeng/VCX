@@ -343,6 +343,91 @@ namespace VCX::Labs::Drawing2D {
         glm::ivec2 const p1,
         glm::ivec2 const p2) {
         // your code here:
+        glm::ivec2 P[3];
+        if (p0[1] >= p1[1] && p0[1] >= p2[1]) {
+            P[0] = p0;
+            if (p1[1] >= p2[1]) {
+                P[1] = p1;
+                P[2] = p2;
+            } else {
+                P[2] = p1;
+                P[1] = p2;
+            }
+        } else if (p1[1] >= p0[1] && p1[1] >= p2[1]) {
+            P[0] = p1;
+            if (p0[1] >= p2[1]) {
+                P[1] = p0;
+                P[2] = p2;
+            } else {
+                P[2] = p0;
+                P[1] = p2;
+            }
+        } else if (p2[1] >= p0[1] && p2[1] >= p1[1]) {
+            P[0] = p2;
+            if (p0[1] >= p1[1]) {
+                P[1] = p0;
+                P[2] = p1;
+            } else {
+                P[2] = p0;
+                P[1] = p1;
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            std::printf("%d:%d\n", P[i][0], P[i][1]);
+        }
+        for (int y = P[1][1]; y < P[0][1]; y++) {
+            int x1 = round(1.0 * ((y - P[1][1]) * (P[0][0] - P[1][0])) / (P[0][1] - P[1][1])) + P[1][0];
+            int x2 = round(1.0 * (y - P[2][1]) * (P[0][0] - P[2][0]) / (P[0][1] - P[2][1])) + P[2][0];
+            if (x1 > x2) {
+                int tmp = x1;
+                x1      = x2;
+                x2      = tmp;
+            }
+            for (int x = x1; x <= x2; x++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+            }
+        }
+        for (int y = P[2][1]; y < P[1][1]; y++) {
+            int x1 = round(1.0 * (y - P[2][1]) * (P[0][0] - P[2][0]) / (P[0][1] - P[2][1])) + P[2][0];
+            int x2 = round(1.0 * (y - P[2][1]) * (P[1][0] - P[2][0]) / (P[1][1] - P[2][1])) + P[2][0];
+            if (x1 > x2) {
+                int tmp = x1;
+                x1      = x2;
+                x2      = tmp;
+            }
+            for (int x = x1; x <= x2; x++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+            }
+        }
+        for (int i = 0; i < 3; i++) {
+            canvas.SetAt({ (std::size_t) P[i][0], (std::size_t) P[i][1] }, color);
+        }
+        if (P[0][1] == P[1][1]) {
+            int x1 = P[0][0];
+            int x2 = P[1][0];
+            int y  = P[0][1];
+            if (x1 > x2) {
+                int tmp = x1;
+                x1      = x2;
+                x2      = tmp;
+            }
+            for (int x = x1; x <= x2; x++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+            }
+        }
+        if (P[2][1] == P[1][1]) {
+            int x1 = P[2][0];
+            int x2 = P[1][0];
+            int y  = P[1][1];
+            if (x1 > x2) {
+                int tmp = x1;
+                x1      = x2;
+                x2      = tmp;
+            }
+            for (int x = x1; x <= x2; x++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+            }
+        }
     }
 
     /******************* 6. Image Supersampling *****************/
