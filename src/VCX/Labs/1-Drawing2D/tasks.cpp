@@ -4,7 +4,11 @@
 
 #include "Labs/1-Drawing2D/tasks.h"
 
+#include <math.h>
+
 using VCX::Labs::Common::ImageRGB;
+
+float Color_Buf_Img[1000][1000][3] = {};
 
 namespace VCX::Labs::Drawing2D {
     /******************* 1.Image Dithering *****************/
@@ -176,12 +180,51 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
+        memset(Color_Buf_Img, 0, sizeof(Color_Buf_Img));
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                glm::vec3 color                = input[{ x, y }];
+                Color_Buf_Img[x + 1][y + 1][0] = color.r;
+                Color_Buf_Img[x + 1][y + 1][1] = color.g;
+                Color_Buf_Img[x + 1][y + 1][2] = color.b;
+            }
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                float color_tmp[3] = {};
+                for (int i = 0; i < 3; i++) {
+                    for (int j = 0; j < 3; j++)
+                        for (int k = 0; k < 3; k++) {
+                            color_tmp[i] += Color_Buf_Img[x + j][y + k][i];
+                        }
+                    color_tmp[i] /= 9;
+                }
+                output.SetAt({ x, y }, { color_tmp[0], color_tmp[1], color_tmp[2] });
+            }
     }
 
     void Edge(
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
+        memset(Color_Buf_Img, 0, sizeof(Color_Buf_Img));
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                glm::vec3 color                = input[{ x, y }];
+                Color_Buf_Img[x + 1][y + 1][0] = color.r;
+                Color_Buf_Img[x + 1][y + 1][1] = color.g;
+                Color_Buf_Img[x + 1][y + 1][2] = color.b;
+            }
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                float color_tmp[3][2] = {};
+                float tmp[3]          = {};
+                for (int i = 0; i < 3; i++) {
+                    color_tmp[i][0] = Color_Buf_Img[x + 2][y + 2][i] - Color_Buf_Img[x][y + 2][i] + 2 * (Color_Buf_Img[x + 2][y + 1][i] - Color_Buf_Img[x][y + 1][i]) + Color_Buf_Img[x + 2][y][i] - Color_Buf_Img[x][y][i];
+                    color_tmp[i][1] = Color_Buf_Img[x + 2][y + 2][i] - Color_Buf_Img[x + 2][y][i] + 2 * (Color_Buf_Img[x + 1][y + 2][i] - Color_Buf_Img[x + 1][y][i]) + Color_Buf_Img[x][y + 2][i] - Color_Buf_Img[x][y][i];
+                    tmp[i]          = sqrt(color_tmp[i][0] * color_tmp[i][0] + color_tmp[i][1] * color_tmp[i][1]);
+                }
+                output.SetAt({ x, y }, { tmp[0], tmp[1], tmp[2] });
+            }
     }
 
     /******************* 3. Image Inpainting *****************/
