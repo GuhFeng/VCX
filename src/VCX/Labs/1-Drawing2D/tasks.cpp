@@ -260,14 +260,16 @@ namespace VCX::Labs::Drawing2D {
         for (int iter = 0; iter < 8000; ++iter) {
             for (std::size_t y = 1; y < height - 1; ++y)
                 for (std::size_t x = 1; x < width - 1; ++x) {
-                    g[y * width + x] = (g[(y - 1) * width + x] + g[(y + 1) * width + x] + g[y * width + x - 1] + g[y * width + x + 1]);
-                    g[y * width + x] = g[y * width + x] * glm::vec3(0.25);
+                    glm::vec3 div_front = inputFront[{ x + 1, y }] + inputFront[{ x - 1, y }] + inputFront[{ x, y + 1 }] + inputFront[{ x, y - 1 }];
+                    div_front           = div_front - inputFront[{ x, y }] * glm::vec3(4);
+                    g[y * width + x]    = (g[(y - 1) * width + x] + g[(y + 1) * width + x] + g[y * width + x - 1] + g[y * width + x + 1]);
+                    g[y * width + x]    = (g[y * width + x] - div_front) * glm::vec3(0.25);
                 }
         }
 
         for (std::size_t y = 0; y < inputFront.GetSizeY(); ++y)
             for (std::size_t x = 0; x < inputFront.GetSizeX(); ++x) {
-                glm::vec3 color = g[y * width + x] + inputFront.GetAt({ x, y });
+                glm::vec3 color = g[y * width + x]; //+  inputFront.GetAt({ x, y });
                 output.SetAt({ x + offset.x, y + offset.y }, color);
             }
         delete[] g;
