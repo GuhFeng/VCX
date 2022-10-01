@@ -372,9 +372,6 @@ namespace VCX::Labs::Drawing2D {
                 P[1] = p1;
             }
         }
-        for (int i = 0; i < 3; i++) {
-            std::printf("%d:%d\n", P[i][0], P[i][1]);
-        }
         for (int y = P[1][1]; y < P[0][1]; y++) {
             int x1 = round(1.0 * ((y - P[1][1]) * (P[0][0] - P[1][0])) / (P[0][1] - P[1][1])) + P[1][0];
             int x2 = round(1.0 * (y - P[2][1]) * (P[0][0] - P[2][0]) / (P[0][1] - P[2][1])) + P[2][0];
