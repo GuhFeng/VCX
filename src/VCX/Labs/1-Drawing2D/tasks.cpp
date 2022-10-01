@@ -241,11 +241,19 @@ namespace VCX::Labs::Drawing2D {
         // set boundary condition
         for (std::size_t y = 0; y < height; ++y) {
             // set boundary for (0, y), your code: g[y * width] = ?
+            glm::vec3 color1 = inputBack[{ (std::size_t)(offset[0]), (std::size_t)(offset[1] + y) }];
+            g[y * width]     = color1;
+            glm::vec3 color2 = inputBack[{ (std::size_t)(offset[0] + width - 1), (std::size_t)(offset[1] + y) }];
             // set boundary for (width - 1, y), your code: g[y * width + width - 1] = ?
+            g[y * width + width - 1] = color2;
         }
         for (std::size_t x = 0; x < width; ++x) {
             // set boundary for (x, 0), your code: g[x] = ?
+            glm::vec3 color1 = inputBack[{ (std::size_t)(offset[0] + x), (std::size_t)(offset[1]) }];
+            g[x]             = color1;
             // set boundary for (x, height - 1), your code: g[(height - 1) * width + x] = ?
+            glm::vec3 color2            = inputBack[{ (std::size_t)(offset[0] + x), (std::size_t)(offset[1] + height - 1) }];
+            g[(height - 1) * width + x] = color2;
         }
 
         // Jacobi iteration, solve Ag = b
@@ -272,6 +280,59 @@ namespace VCX::Labs::Drawing2D {
         glm::ivec2 const p0,
         glm::ivec2 const p1) {
         // your code here:
+        int        x, y, sg, dx, dy, dydx, F;
+        glm::ivec2 ponits[2];
+        switch (abs(p0[0] - p1[0]) >= abs(p0[1] - p1[1])) {
+        case true:
+            if (p0[0] > p1[0]) {
+                ponits[0] = p1;
+                ponits[1] = p0;
+            } else {
+                ponits[1] = p1;
+                ponits[0] = p0;
+            }
+            x, y = ponits[0][1];
+            if (ponits[1][1] == ponits[0][1])
+                sg = 0;
+            else
+                sg = (ponits[1][1] - ponits[0][1]) / abs(ponits[1][1] - ponits[0][1]);
+            dx = 2 * (ponits[1][0] - ponits[0][0]), dy = 2 * abs(ponits[1][1] - ponits[0][1]);
+            dydx = dy - dx, F = dy - dx / 2;
+            for (x = ponits[0][0]; x <= ponits[1][0]; x++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+                if (F < 0) F += dy;
+                else {
+                    y += sg;
+                    F += dydx;
+                }
+            }
+            break;
+
+        default:
+            if (p0[1] > p1[1]) {
+                ponits[0] = p1;
+                ponits[1] = p0;
+            } else {
+                ponits[1] = p1;
+                ponits[0] = p0;
+            }
+            x = ponits[0][0], y;
+            if (ponits[1][0] == ponits[0][0])
+                sg = 0;
+            else
+                sg = (ponits[1][0] - ponits[0][0]) / abs(ponits[1][0] - ponits[0][0]);
+            dx = 2 * abs(ponits[1][0] - ponits[0][0]), dy = 2 * (ponits[1][1] - ponits[0][1]);
+            dydx = dx - dy, F = dx - dy / 2;
+            for (y = ponits[0][1]; y <= ponits[1][1]; y++) {
+                canvas.SetAt({ (std::size_t) x, (std::size_t) y }, color);
+                if (F < 0) F += dx;
+                else {
+                    x += sg;
+                    F += dydx;
+                }
+            }
+            break;
+        }
     }
 
     /******************* 5. Triangle Drawing *****************/
