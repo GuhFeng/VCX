@@ -8,7 +8,26 @@
 
 using VCX::Labs::Common::ImageRGB;
 
-float Color_Buf_Img[1000][1000][3] = {};
+float *** alloc_buff(int w, int h) {
+    float *** p = new float **[w];
+    for (int i = 0; i < w; i++) {
+        p[i] = new float *[h];
+        for (int j = 0; j < h; j++) {
+            p[i][j]    = new float[3];
+            p[i][j][0] = p[i][j][1] = p[i][j][2] = 0;
+        }
+    }
+    return p;
+}
+
+void delete_buff(float *** p, int w, int h) {
+    for (int i = 0; i < w; i++) {
+        for (int j = 0; j < h; j++)
+            delete p[i][j];
+        delete p[i];
+    }
+    delete p;
+}
 
 namespace VCX::Labs::Drawing2D {
     /******************* 1.Image Dithering *****************/
@@ -147,8 +166,8 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
-        float error[190][220][3] = {};
-        std::memset(error, 0, sizeof(error));
+        int       w = input.GetSizeX(), h = input.GetSizeY();
+        float *** error = alloc_buff(w + 5, h + 5);
         for (std::size_t y = 0; y < input.GetSizeY(); ++y)
             for (std::size_t x = 0; x < input.GetSizeX(); ++x) {
                 glm::vec3 color = input[{ x, y }];
@@ -170,9 +189,8 @@ namespace VCX::Labs::Drawing2D {
                     error[x + 2][y + 2][i] += tmp_err[i] * 1 / 16;
                     error[x][y + 2][i] += tmp_err[i] * 3 / 16;
                 }
-
-                // std::printf("%f:%f:%f\n", error[x + 1][y + 1][0], error[x + 1][y + 1][1], error[x + 1][y + 1][2]);
             }
+        delete_buff(error, w + 5, h + 5);
     }
 
     /******************* 2.Image Filtering *****************/
@@ -180,7 +198,8 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
-        memset(Color_Buf_Img, 0, sizeof(Color_Buf_Img));
+        int       w = input.GetSizeX(), h = input.GetSizeY();
+        float *** Color_Buf_Img = alloc_buff(w + 5, h + 5);
         for (std::size_t x = 0; x < input.GetSizeX(); ++x)
             for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
                 glm::vec3 color                = input[{ x, y }];
@@ -200,13 +219,15 @@ namespace VCX::Labs::Drawing2D {
                 }
                 output.SetAt({ x, y }, { color_tmp[0], color_tmp[1], color_tmp[2] });
             }
+        delete_buff(Color_Buf_Img, w + 5, h + 5);
     }
 
     void Edge(
         ImageRGB &       output,
         ImageRGB const & input) {
         // your code here:
-        memset(Color_Buf_Img, 0, sizeof(Color_Buf_Img));
+        int       w = input.GetSizeX(), h = input.GetSizeY();
+        float *** Color_Buf_Img = alloc_buff(w + 5, h + 5);
         for (std::size_t x = 0; x < input.GetSizeX(); ++x)
             for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
                 glm::vec3 color                = input[{ x, y }];
@@ -225,6 +246,7 @@ namespace VCX::Labs::Drawing2D {
                 }
                 output.SetAt({ x, y }, { tmp[0], tmp[1], tmp[2] });
             }
+        delete_buff(Color_Buf_Img, w + 5, h + 5);
     }
 
     /******************* 3. Image Inpainting *****************/
