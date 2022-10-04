@@ -457,6 +457,8 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB const & input,
         int              rate) {
         // your code here:
+        int       w = input.GetSizeX(), h = input.GetSizeY();
+        float *** buff = alloc_buff(w * rate + 5, h * rate + 5);
     }
 
     /******************* 7. Bezier Curve *****************/
