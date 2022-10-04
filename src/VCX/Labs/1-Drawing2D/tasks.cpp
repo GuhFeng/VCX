@@ -458,7 +458,67 @@ namespace VCX::Labs::Drawing2D {
         int              rate) {
         // your code here:
         int       w = input.GetSizeX(), h = input.GetSizeY();
-        float *** buff = alloc_buff(w * rate + 5, h * rate + 5);
+        float *** buff = alloc_buff(w * rate + 5 * rate, h * rate + 5 * rate);
+        float *** img  = alloc_buff(w + 4, h + 4);
+        for (std::size_t x = 0; x < input.GetSizeX(); ++x)
+            for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
+                glm::vec3 color      = input[{ x, y }];
+                img[x + 1][y + 1][0] = color.r;
+                img[x + 1][y + 1][1] = color.g;
+                img[x + 1][y + 1][2] = color.b;
+            }
+        printf("1\n");
+        for (int i = 0; i < w + 1; i++) {
+            for (int j = 0; j < h + 1; j++) {
+                float colors[4][3] = {};
+                for (int k = 0; k < 3; k++) {
+                    colors[0][k] = img[i][j][k];
+                    colors[1][k] = img[i + 1][j][k];
+                    colors[2][k] = img[i][j + 1][k];
+                    colors[3][k] = img[i + 1][j + 1][k];
+                }
+                for (int a = 0; a < rate; a++) {
+                    for (int b = 0; b < rate; b++) {
+                        int w[4];
+                        w[0]    = (2 * rate - 2 * a - 1) * (2 * rate - 2 * b - 1);
+                        w[1]    = (2 * a + 1) * (2 * rate - 2 * b - 1);
+                        w[2]    = (2 * rate - 2 * a - 1) * (2 * b + 1);
+                        w[3]    = (2 * a + 1) * (2 * b + 1);
+                        int sum = w[0] + w[1] + w[2] + w[3];
+                        for (int k = 0; k < 3; k++) {
+                            buff[i * rate + a][j * rate + b][k] = 0;
+                            for (int cnt = 0; cnt < 4; cnt++) {
+                                buff[i * rate + a][j * rate + b][k] += w[cnt] * colors[cnt][k];
+                            }
+                            buff[i * rate + a][j * rate + b][k] /= sum;
+                        }
+                    }
+                }
+            }
+        }
+        printf("2\n");
+        printf("%d:%d", output.GetSizeX(), input.GetSizeX());
+        for (int i = 0; i < output.GetSizeX(); i++) {
+            for (int j = 0; j < output.GetSizeY(); j++) {
+                float clr[3] = {};
+                for (int k = 0; k < 3; k++) {
+                    for (int a = 0; a < rate; a++) {
+                        for (int b = 0; b < rate; b++) {
+                            clr[k] += buff[i * rate + a][j * rate + b][k];
+                        }
+                    }
+                    clr[k] = clr[k] / (rate * rate);
+                    // printf("%f\n", clr[k]);
+                }
+                glm::vec3 tmp;
+                tmp.r = clr[0];
+                tmp.g = clr[1];
+                tmp.b = clr[2];
+                output.SetAt({ (std::size_t) i, (std::size_t) j }, tmp);
+            }
+        }
+        delete_buff(buff, (w + 5) * rate, (h + 5) * rate);
+        delete_buff(img, w + 4, h + 4);
     }
 
     /******************* 7. Bezier Curve *****************/
