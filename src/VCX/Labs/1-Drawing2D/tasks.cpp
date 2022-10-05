@@ -457,49 +457,39 @@ namespace VCX::Labs::Drawing2D {
         ImageRGB const & input,
         int              rate) {
         // your code here:
-        int       w = input.GetSizeX(), h = input.GetSizeY();
-        float *** buff = alloc_buff(w * rate + 5 * rate, h * rate + 5 * rate);
-        float *** img  = alloc_buff(w + 4, h + 4);
+        int       w0 = input.GetSizeX(), h0 = input.GetSizeY();
+        int       w = output.GetSizeX(), h = output.GetSizeY();
+        float *** buff = alloc_buff(w * rate, h * rate);
+        float *** img  = alloc_buff(w0 + 4, h0 + 4);
+        float     r1 = w0 * 1.0 / (w * rate), r2 = h0 * 1.0 / (h * rate);
         for (std::size_t x = 0; x < input.GetSizeX(); ++x)
             for (std::size_t y = 0; y < input.GetSizeY(); ++y) {
-                glm::vec3 color      = input[{ x, y }];
-                img[x + 1][y + 1][0] = color.r;
-                img[x + 1][y + 1][1] = color.g;
-                img[x + 1][y + 1][2] = color.b;
+                glm::vec3 color = input[{ x, y }];
+                img[x][y][0]    = color.r;
+                img[x][y][1]    = color.g;
+                img[x][y][2]    = color.b;
             }
-        printf("1\n");
-        for (int i = 0; i < w + 1; i++) {
-            for (int j = 0; j < h + 1; j++) {
-                float colors[4][3] = {};
+        for (size_t i = 0; i < w * rate; i++) {
+            for (size_t j = 0; j < h * rate; j++) {
+                float x = i * r1, y = j * r2;
+                int   x0 = x, y0 = y;
+                float w[4]      = {};
+                float clr[4][3] = {};
+                w[0]            = (x0 + 1 - x) * (y0 + 1 - y);
+                w[1]            = (x0 + 1 - x) * (y - y0);
+                w[2]            = (y0 + 1 - y) * (x - x0);
+                w[3]            = (x - x0) * (y - y0);
                 for (int k = 0; k < 3; k++) {
-                    colors[0][k] = img[i][j][k];
-                    colors[1][k] = img[i + 1][j][k];
-                    colors[2][k] = img[i][j + 1][k];
-                    colors[3][k] = img[i + 1][j + 1][k];
-                }
-                for (int a = 0; a < rate; a++) {
-                    for (int b = 0; b < rate; b++) {
-                        int w[4];
-                        w[0]    = (2 * rate - 2 * a - 1) * (2 * rate - 2 * b - 1);
-                        w[1]    = (2 * a + 1) * (2 * rate - 2 * b - 1);
-                        w[2]    = (2 * rate - 2 * a - 1) * (2 * b + 1);
-                        w[3]    = (2 * a + 1) * (2 * b + 1);
-                        int sum = w[0] + w[1] + w[2] + w[3];
-                        for (int k = 0; k < 3; k++) {
-                            buff[i * rate + a][j * rate + b][k] = 0;
-                            for (int cnt = 0; cnt < 4; cnt++) {
-                                buff[i * rate + a][j * rate + b][k] += w[cnt] * colors[cnt][k];
-                            }
-                            buff[i * rate + a][j * rate + b][k] /= sum;
-                        }
-                    }
+                    clr[0][k]     = img[x0][y0][k];
+                    clr[1][k]     = img[x0][y0 + 1][k];
+                    clr[2][k]     = img[x0 + 1][y0][k];
+                    clr[3][k]     = img[x0 + 1][y0 + 1][k];
+                    buff[i][j][k] = w[0] * clr[0][k] + w[1] * clr[1][k] + w[2] * clr[2][k] + w[3] * clr[3][k];
                 }
             }
         }
-        printf("2\n");
-        printf("%d:%d", output.GetSizeX(), input.GetSizeX());
-        for (int i = 0; i < output.GetSizeX(); i++) {
-            for (int j = 0; j < output.GetSizeY(); j++) {
+        for (int i = 0; i < w; i++) {
+            for (int j = 0; j < h; j++) {
                 float clr[3] = {};
                 for (int k = 0; k < 3; k++) {
                     for (int a = 0; a < rate; a++) {
@@ -508,7 +498,6 @@ namespace VCX::Labs::Drawing2D {
                         }
                     }
                     clr[k] = clr[k] / (rate * rate);
-                    // printf("%f\n", clr[k]);
                 }
                 glm::vec3 tmp;
                 tmp.r = clr[0];
@@ -517,25 +506,20 @@ namespace VCX::Labs::Drawing2D {
                 output.SetAt({ (std::size_t) i, (std::size_t) j }, tmp);
             }
         }
-        delete_buff(buff, (w + 5) * rate, (h + 5) * rate);
-        delete_buff(img, w + 4, h + 4);
+        delete_buff(buff, w * rate, h * rate);
+        delete_buff(img, w0 + 4, h0 + 4);
     }
 
     /******************* 7. Bezier Curve *****************/
     glm::vec2 CalculateBezierPoint(
         std::span<glm::vec2> points,
         float const          t) {
-        if (points.size() == 4) {
-            for (int i = 0; i < points.size(); i++) {
-                printf("%d  %d:%d\n", points.size(), points[i].r, points[i][1]);
-            }
-        }
         // your code here:
         std::vector<glm::vec2> p;
         for (int i = 0; i < points.size() - 1; i++) {
             p.push_back(points[i]);
-            p[i][0] = (1 - t) * points[i][0] + t * points[i][0];
-            p[i][1] = (1 - t) * points[i][1] + t * points[i][1];
+            p[i][0] = (1 - t) * points[i][0] + t * points[i + 1][0];
+            p[i][1] = (1 - t) * points[i][1] + t * points[i + 1][1];
         }
         if (points.size() == 2) {
             return p[0];
