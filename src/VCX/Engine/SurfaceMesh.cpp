@@ -17,8 +17,7 @@ namespace VCX::Engine {
             normals[face[1]] += normal;
             normals[face[2]] += normal;
         }
-        for (glm::vec3 & normal : normals)
-            normal = glm::normalize(normal);
+        for (glm::vec3 & normal : normals) normal = glm::normalize(normal);
         return normals;
     }
 
@@ -40,8 +39,6 @@ namespace VCX::Engine {
         }
         float uniformScale = glm::min(glm::min(relativeScale.x, relativeScale.y), relativeScale.z);
 
-        for (auto & pos : Positions) {
-            pos = (pos - currCenter) * uniformScale + targetCenter;
-        }
+        for (auto & pos : Positions) { pos = (pos - currCenter) * uniformScale + targetCenter; }
     }
-}
+} // namespace VCX::Engine

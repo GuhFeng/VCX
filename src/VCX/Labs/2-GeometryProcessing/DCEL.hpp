@@ -1,6 +1,7 @@
 #pragma once
-#include <vector>
 #include <unordered_map>
+#include <vector>
+
 
 namespace VCX::Labs::GeometryProcessing {
     struct DCEL {
@@ -15,20 +16,26 @@ namespace VCX::Labs::GeometryProcessing {
 
             HalfEdge const * NextEdge() const & { return this + _next; }
             HalfEdge const * PrevEdge() const & { return this + _prev; }
-            HalfEdge const * PairEdgeOr(HalfEdge const * defaultValue) const & { return _pair ? (this + _pair) : defaultValue; }
+            HalfEdge const * PairEdgeOr(HalfEdge const * defaultValue) const & {
+                return _pair ? (this + _pair) : defaultValue;
+            }
             HalfEdge const * PairEdge() const & { return this + _pair; }
 
-            VertexIdx        OppositeVertex() const & { return reinterpret_cast<VertexIdx const *>(this + 3 - _idx)[_idx]; }
-            Triangle const * Face() const & { return reinterpret_cast<Triangle const *>(this - _idx); }
+            VertexIdx OppositeVertex() const & {
+                return reinterpret_cast<VertexIdx const *>(this + 3 - _idx)[_idx];
+            }
+            Triangle const * Face() const & {
+                return reinterpret_cast<Triangle const *>(this - _idx);
+            }
             Triangle const * OppositeFace() const & { this[_pair].Face(); }
             VertexIdx        PairOppositeVertex() const & { return this[_pair].OppositeVertex(); }
 
             bool CountOnce() const & { return _pair < 0; }
             int  Index() const { return _idx; }
 
-            HalfEdge()                 = default;
-            HalfEdge(HalfEdge &&)      = default;
-            HalfEdge(HalfEdge const &) = delete;
+            HalfEdge()                             = default;
+            HalfEdge(HalfEdge &&)                  = default;
+            HalfEdge(HalfEdge const &)             = delete;
             HalfEdge & operator=(HalfEdge const &) = delete;
 
             friend struct DCEL;
@@ -62,9 +69,9 @@ namespace VCX::Labs::GeometryProcessing {
                 return _i[0] == idx || _i[1] == idx || _i[2] == idx;
             }
 
-            Triangle()                 = default;
-            Triangle(Triangle &&)      = default;
-            Triangle(Triangle const &) = delete;
+            Triangle()                             = default;
+            Triangle(Triangle &&)                  = default;
+            Triangle(Triangle const &)             = delete;
             Triangle & operator=(Triangle const &) = delete;
 
             friend struct DCEL;
@@ -77,8 +84,7 @@ namespace VCX::Labs::GeometryProcessing {
         static_assert(sizeof(HalfEdge) == 12U);
         static_assert(sizeof(Triangle) == 48U);
 
-        DCEL(std::uint32_t numVertex, std::uint32_t numFace):
-            _verts(numVertex, ~0) {
+        DCEL(std::uint32_t numVertex, std::uint32_t numFace): _verts(numVertex, ~0) {
             _faces.reserve(numFace);
             _pairs.reserve(numFace);
         }
@@ -103,9 +109,7 @@ namespace VCX::Labs::GeometryProcessing {
                     if (! _faces[t].HasOppositeFace(i)) {
                         VertexIdx j = _faces[t]._i[(i + 1) % 3];
                         VertexIdx k = _faces[t]._i[(i + 2) % 3];
-                        if (++sideCount[j] > 2 || ++sideCount[k] > 2) {
-                            return _valid = false;
-                        }
+                        if (++sideCount[j] > 2 || ++sideCount[k] > 2) { return _valid = false; }
                         _verts[j] = t * (sizeof(Triangle) / sizeof(HalfEdge)) + i;
                     }
                     auto const * e = _faces[t].Edges(i);
@@ -148,40 +152,32 @@ namespace VCX::Labs::GeometryProcessing {
                 return neighbors;
             }
 
-            bool IsSide() const {
-                return ! _e->PairEdgeOr(nullptr);
-            }
+            bool IsSide() const { return ! _e->PairEdgeOr(nullptr); }
 
             friend struct DCEL;
 
         private:
-            Vertex(HalfEdge const * e):
-                _e(e) {}
+            Vertex(HalfEdge const * e): _e(e) {}
             HalfEdge const * _e;
         };
 
-        Vertex GetVertex(VertexIdx idx) const {
-            return GetEdge(_verts[idx]);
-        }
+        Vertex GetVertex(VertexIdx idx) const { return GetEdge(_verts[idx]); }
 
-        std::vector<Triangle> const & GetFaces() const {
-            return _faces;
-        }
+        std::vector<Triangle> const & GetFaces() const { return _faces; }
 
         std::vector<HalfEdge const *> GetEdges() const {
             std::vector<HalfEdge const *> results;
             for (std::size_t i = 0; i < _faces.size(); ++i) {
                 for (std::size_t j = 0; j < 3U; ++j) {
-                    HalfEdge const * e = reinterpret_cast<HalfEdge const *>(_faces.data()) + (i * (sizeof(Triangle) / sizeof(HalfEdge)) + j);
+                    HalfEdge const * e = reinterpret_cast<HalfEdge const *>(_faces.data())
+                        + (i * (sizeof(Triangle) / sizeof(HalfEdge)) + j);
                     if (! e->PairEdgeOr(nullptr) || e->CountOnce()) results.emplace_back(e);
                 }
             }
             return results;
         }
 
-        int IndexOf(Triangle const * face) const {
-            return face - _faces.data();
-        }
+        int IndexOf(Triangle const * face) const { return face - _faces.data(); }
 
     private:
         std::unordered_map<std::size_t, int> _pairs;
@@ -194,8 +190,9 @@ namespace VCX::Labs::GeometryProcessing {
         }
 
         int GetPair(VertexIdx vFrom, VertexIdx vTo, int e) {
-            std::size_t key  = static_cast<std::size_t>(std::min(vFrom, vTo)) << 32ULL | static_cast<std::size_t>(std::max(vFrom, vTo));
-            auto        iter = _pairs.find(key);
+            std::size_t key = static_cast<std::size_t>(std::min(vFrom, vTo)) << 32ULL
+                | static_cast<std::size_t>(std::max(vFrom, vTo));
+            auto iter = _pairs.find(key);
             if (iter == _pairs.end()) {
                 _pairs[key] = e;
                 return 0;
@@ -212,7 +209,7 @@ namespace VCX::Labs::GeometryProcessing {
         }
 
         Triangle & AddFaceImpl(VertexIdx v0, VertexIdx v1, VertexIdx v2) {
-            int        e0      = static_cast<int>(_faces.size()) * (sizeof(Triangle) / sizeof(HalfEdge));
+            int        e0 = static_cast<int>(_faces.size()) * (sizeof(Triangle) / sizeof(HalfEdge));
             Triangle & tri     = _faces.emplace_back();
             tri._i[0]          = v0;
             tri._i[1]          = v1;
@@ -245,4 +242,4 @@ namespace VCX::Labs::GeometryProcessing {
             return tri;
         }
     };
-}
+} // namespace VCX::Labs::GeometryProcessing

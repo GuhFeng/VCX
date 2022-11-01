@@ -1,7 +1,7 @@
 #pragma once
 
-#include <vector>
 #include <glm/glm.hpp>
+#include <vector>
 
 namespace VCX::Engine {
     class SurfaceMesh {
@@ -12,11 +12,13 @@ namespace VCX::Engine {
         std::vector<std::uint32_t> Indices;
 
         std::size_t GetVertexCount() const { return Positions.size(); }
-        bool IsNormalAvailable() const { return Normals.size() == Positions.size(); }
-        bool IsTexCoordAvailable() const { return TexCoords.size() == Positions.size(); }
+        bool        IsNormalAvailable() const { return Normals.size() == Positions.size(); }
+        bool        IsTexCoordAvailable() const { return TexCoords.size() == Positions.size(); }
 
         std::vector<glm::vec3> ComputeNormals() const;
 
-        void NormalizePositions(glm::vec3 const & minAABB = glm::vec3(-0.5f), glm::vec3 const & maxAABB = glm::vec3(0.5f));
+        void NormalizePositions(
+            glm::vec3 const & minAABB = glm::vec3(-0.5f),
+            glm::vec3 const & maxAABB = glm::vec3(0.5f));
     };
 }
