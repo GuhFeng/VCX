@@ -2,7 +2,6 @@
 #include <unordered_map>
 #include <vector>
 
-
 namespace VCX::Labs::GeometryProcessing {
     struct DCEL {
     public:
@@ -27,7 +26,7 @@ namespace VCX::Labs::GeometryProcessing {
             Triangle const * Face() const & {
                 return reinterpret_cast<Triangle const *>(this - _idx);
             }
-            Triangle const * OppositeFace() const & { this[_pair].Face(); }
+            Triangle const * OppositeFace() const & { return this[_pair].Face(); }
             VertexIdx        PairOppositeVertex() const & { return this[_pair].OppositeVertex(); }
 
             bool CountOnce() const & { return _pair < 0; }
@@ -150,6 +149,17 @@ namespace VCX::Labs::GeometryProcessing {
                     e = trial;
                 } while (e != _e);
                 return neighbors;
+            }
+
+            std::vector<Triangle const *> GetFaces() const {
+                std::vector<Triangle const *> faces;
+                HalfEdge const *              e = _e;
+                do {
+                    faces.push_back(e->Face());
+                    e = e->PrevEdge()->PairEdgeOr(nullptr);
+                    if (! e) break;
+                } while (e != _e);
+                return faces;
             }
 
             bool IsSide() const { return ! _e->PairEdgeOr(nullptr); }
