@@ -20,10 +20,12 @@ namespace VCX::Labs::GeometryProcessing {
         }
         return p;
     }
+
     void unalloc(int a, uint32_t ** p) {
         for (int i = 0; i < a; i++) delete[] p[i];
         delete[] p;
     }
+
     void show(const Engine::SurfaceMesh & mesh) {
         printf("Positions: %d \n", mesh.Positions.size());
         for (glm::vec3 p : mesh.Positions) printf("%f %f %f   ", p.p, p.y, p.z);
@@ -32,6 +34,7 @@ namespace VCX::Labs::GeometryProcessing {
             printf("%d %d %d   ", mesh.Indices[i], mesh.Indices[i + 1], mesh.Indices[i + 2]);
         printf("\n");
     }
+
 #include "Labs/2-GeometryProcessing/marching_cubes_table.h"
 
     /******************* 1. Mesh Subdivision *****************/
@@ -85,7 +88,6 @@ namespace VCX::Labs::GeometryProcessing {
                 New.Indices.push_back(record[f[0]][f[1]]);
             }
             unalloc(Old.Positions.size(), record);
-
             output = New;
             delete &Old;
             delete &New;
@@ -98,6 +100,8 @@ namespace VCX::Labs::GeometryProcessing {
         Engine::SurfaceMesh &       output,
         const std::uint32_t         numIterations) {
         // your code here
+        DCEL & links = *new DCEL;
+        links.AddFaces(input.Indices);
     }
 
     /******************* 3. Mesh Simplification *****************/
