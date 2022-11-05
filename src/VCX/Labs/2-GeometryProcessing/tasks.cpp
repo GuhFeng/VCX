@@ -42,7 +42,6 @@ namespace VCX::Labs::GeometryProcessing {
         Engine::SurfaceMesh const & input,
         Engine::SurfaceMesh &       output,
         std::uint32_t               numIterations) {
-        // your code here
         output = input;
         for (int cnt = 0; cnt < numIterations; cnt++) {
             Engine::SurfaceMesh & Old   = *(new Engine::SurfaceMesh(output));
