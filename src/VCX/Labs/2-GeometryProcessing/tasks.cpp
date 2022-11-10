@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <list>
 #include <map>
@@ -100,6 +101,40 @@ namespace VCX::Labs::GeometryProcessing {
         // your code here
         DCEL & links = *new DCEL;
         links.AddFaces(input.Indices);
+        output = input;
+        std::vector<uint32_t> side_vertex;
+        uint32_t              v_start = 0, v_prev = 0, v_now = 0;
+        for (std::size_t i = 0; i < output.Positions.size(); ++i) {
+            DCEL::Vertex v = links.GetVertex(i);
+            if (v.IsSide()) {
+                v_start = i;
+                v_prev  = i;
+                v_now   = v.GetSideNeighbors().first;
+                side_vertex.push_back(v_prev);
+                break;
+            }
+        }
+        while (v_now != v_start) {
+            DCEL::Vertex v  = links.GetVertex(v_now);
+            uint32_t     v1 = v.GetSideNeighbors().first, v2 = v.GetSideNeighbors().second;
+            side_vertex.push_back(v_now);
+            if (v1 == v_prev) {
+                v_prev = v_now;
+                v_now  = v2;
+            } else {
+                v_prev = v_now;
+                v_now  = v1;
+            }
+        }
+        double PI = acos(-1);
+        for (int i = 0; i < output.Positions.size(); i++) {
+            output.TexCoords.push_back(glm::vec2(0.5));
+        }
+        for (int i = 0; i < side_vertex.size(); i++) {
+            output.TexCoords[side_vertex[i]] = glm::vec2(
+                0.5 + 0.5 * sin(2 * PI * i / side_vertex.size()),
+                0.5 + 0.5 * cos(2 * PI * i / side_vertex.size()));
+        }
     }
 
     /******************* 3. Mesh Simplification *****************/
