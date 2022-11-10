@@ -1,0 +1,49 @@
+uint32_t *** cubes = allocate_3d(n, n, n);
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    cubes[i][j][k] = 0;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(grid_min + dx * i, grid_min + dx * j, grid_min + dx * k))
+                         >= 0);
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i + dx, grid_min + dx * j, grid_min + dx * k))
+                         >= 0)
+                        << 1;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i, grid_min + dx * j + dx, grid_min + dx * k))
+                         >= 0)
+                        << 2;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i + dx, grid_min + dx * j + dx, grid_min + dx * k))
+                         >= 0)
+                        << 3;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i, grid_min + dx * j, grid_min + dx * k + dx))
+                         >= 0)
+                        << 4;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i + dx, grid_min + dx * j, grid_min + dx * k + dx))
+                         >= 0)
+                        << 5;
+                    cubes[i][j][k] +=
+                        (sdf(glm::vec3(
+                             grid_min + dx * i, grid_min + dx * j + dx, grid_min + dx * k + dx))
+                         >= 0)
+                        << 6;
+                    cubes[i][j][k] += (sdf(glm::vec3(
+                                           grid_min + dx * i + dx,
+                                           grid_min + dx * j + dx,
+                                           grid_min + dx * k + dx))
+                                       >= 0)
+                        << 7;
+                }
+            }
+        }
+        c_EdgeOrdsTable[2];
+    }
