@@ -11,48 +11,6 @@
 #include "Labs/2-GeometryProcessing/tasks.h"
 
 namespace VCX::Labs::GeometryProcessing {
-    uint32_t ** allocate(int a, int b, int type = 0) {
-        uint32_t ** p = new uint32_t *[a];
-        for (int i = 0; i < a; i++) {
-            if (type) {
-                p[i] = new uint32_t[b];
-                memset(p[i], -1, sizeof(uint32_t) * b);
-            } else {
-                p[i] = (uint32_t *) new double[b];
-                memset(p[i], 0, sizeof(uint64_t) * b);
-            }
-        }
-        return p;
-    }
-
-    void unalloc(int a, uint32_t ** p, int type = 1) {
-        if (type) {
-            for (int i = 0; i < a; i++) delete[] p[i];
-        } else {
-            for (int i = 0; i < a; i++) delete[] (double *) p[i];
-        }
-        delete[] p;
-    }
-
-    uint32_t *** allocate_3d(int a, int b, int c) {
-        uint32_t *** p = new uint32_t **[a];
-        for (int i = 0; i < a; i++) {
-            p[i] = new uint32_t *[b];
-            for (int j = 0; j < b; j++) {
-                p[i][j] = new uint32_t[c];
-                memset(p[i][j], 0, sizeof(uint32_t) * c);
-            }
-        }
-        return p;
-    }
-
-    void unalloc_3d(int a, int b, uint32_t *** p) {
-        for (int i = 0; i < a; i++) {
-            delete[] p[i];
-            for (int j = 0; j < b; j++) delete[] p[i][j];
-        }
-        delete[] p;
-    }
 
     float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         glm::vec3 d1  = v1 - v3;
@@ -60,15 +18,6 @@ namespace VCX::Labs::GeometryProcessing {
         double    COS = ((d1 * d2)[0] + (d1 * d2)[1] + (d1 * d2)[2]);
         COS           = COS / (pow(((d1 * d1)[0] + (d1 * d1)[1] + (d1 * d1)[2]), 0.5));
         COS           = COS / (pow(((d2 * d2)[0] + (d2 * d2)[1] + (d2 * d2)[2]), 0.5));
-        /*if (COS >= 1) {
-            printf("wrong!%f\n", COS);
-            printf("%f %f %f   %f %f %f\n", d1[0], d1[1], d1[2], d2[0], d2[1], d2[2]);
-            printf(
-                "%f    %f \n",
-                ((d1 * d2)[0] + (d1 * d2)[1] + (d1 * d2)[2]),
-                (powf(((d1 * d1)[0] + (d1 * d1)[1] + (d1 * d1)[2]), 0.5))
-                    * powf(((d2 * d2)[0] + (d2 * d2)[1] + (d2 * d2)[2]), 0.5));
-        }*/
         if (COS >= 1 - 1e-12) return COS = 1 - 1e-12;
         return (COS / sqrt(1 - COS * COS)) / 1e3;
     }
@@ -177,20 +126,21 @@ namespace VCX::Labs::GeometryProcessing {
             DCEL &                links = *(new DCEL);
             links.AddFaces(Old.Indices);
             if (! links.IsValid()) printf("Invalid Mesh\n");
-            double ** w = (double **) allocate(Old.Positions.size(), Old.Positions.size(), 0);
+            std::map<uint64_t, double> map_w;
             for (DCEL::HalfEdge const * e : links.GetEdges()) {
                 std::uint32_t v0 = e->OppositeVertex();
                 std::uint32_t v1 = e->PairOppositeVertex();
                 std::uint32_t v2 = e->From();
                 std::uint32_t v3 = e->To();
                 if (useUniformWeight) {
-                    w[v2][v3] = 1.0;
-                    w[v3][v2] = 1.0;
+                    map_w[((uint64_t) v2 << 32) + v3] = 1.0;
+                    map_w[((uint64_t) v3 << 32) + v2] = 1.0;
                 } else {
-                    w[v2][v3] = my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v1]);
-                    w[v2][v3] =
-                        w[v2][v3] + my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v0]);
-                    w[v3][v2] = w[v2][v3];
+                    map_w[((uint64_t) v2 << 32) + v3] =
+                        my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v1]);
+                    map_w[((uint64_t) v2 << 32) + v3] = map_w[((uint64_t) v2 << 32) + v3]
+                        + my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v0]);
+                    map_w[((uint64_t) v3 << 32) + v2] = map_w[((uint64_t) v2 << 32) + v3];
                 }
             }
             for (std::size_t i = 0; i < Old.Positions.size(); ++i) {
@@ -200,14 +150,16 @@ namespace VCX::Labs::GeometryProcessing {
                 glm::vec3                           pos(0.0);
                 float                               W = 0;
                 for (int j = 0; j < neighbor_list.size(); j++) {
-                    pos = pos + Old.Positions[neighbor_list[j]] * glm::vec3(w[i][neighbor_list[j]]);
-                    W += w[i][neighbor_list[j]];
+                    uint32_t v2 = i, v3 = neighbor_list[j];
+                    pos = pos
+                        + Old.Positions[neighbor_list[j]]
+                            * glm::vec3(map_w[((uint64_t) v2 << 32) + v3]);
+                    W += map_w[((uint64_t) v2 << 32) + v3];
                 }
                 pos = pos / glm::vec3(W);
                 pos = pos * glm::vec3(lambda) + Old.Positions[i] * glm::vec3(1 - lambda);
                 New.Positions.push_back(pos);
             }
-            unalloc(Old.Positions.size(), (uint32_t **) w, 0);
             for (int i = 0; i < Old.Indices.size(); i++) New.Indices.push_back(Old.Indices[i]);
             output = New;
             delete &Old;
