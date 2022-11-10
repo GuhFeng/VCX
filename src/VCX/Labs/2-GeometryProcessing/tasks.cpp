@@ -128,12 +128,38 @@ namespace VCX::Labs::GeometryProcessing {
         }
         double PI = acos(-1);
         for (int i = 0; i < output.Positions.size(); i++) {
-            output.TexCoords.push_back(glm::vec2(0.5));
+            output.TexCoords.push_back(glm::vec2(0.5 + 0 * i / output.Positions.size()));
         }
         for (int i = 0; i < side_vertex.size(); i++) {
             output.TexCoords[side_vertex[i]] = glm::vec2(
                 0.5 + 0.5 * sin(2 * PI * i / side_vertex.size()),
                 0.5 + 0.5 * cos(2 * PI * i / side_vertex.size()));
+        }
+        for (int cnt_iter = 0; cnt_iter < numIterations; cnt_iter++) {
+            std::vector<glm::vec2> texco;
+            for (int i = 0; i < output.Positions.size(); i++) {
+                DCEL::Vertex v = links.GetVertex(i);
+                if (v.IsSide()) {
+                    texco.push_back(output.TexCoords[i]);
+                    continue;
+                }
+                std::vector<uint32_t> v_neighbors = v.GetNeighbors();
+                std::vector<float>    Dis;
+                float                 D_sum = 0;
+                for (uint32_t u : v_neighbors) {
+                    glm::lowp_vec2 d = output.TexCoords[i] - output.TexCoords[u];
+                    d                = d * d;
+                    Dis.push_back(1);
+                    D_sum = D_sum + 1;
+                }
+                texco.push_back(glm::vec2(0));
+                for (int j = 0; j < Dis.size(); j++) {
+                    uint32_t u = v_neighbors[j];
+                    texco[i]   = texco[i] + glm::vec2(Dis[j] / D_sum) * output.TexCoords[u];
+                }
+            }
+            output.TexCoords = texco;
+            // printf("%f,%f\n", texco[13][0], texco[13][1]);
         }
     }
 
