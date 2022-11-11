@@ -32,6 +32,17 @@ namespace VCX::Labs::GeometryProcessing {
         printf("\n");
     }
 
+    glm::vec4 plane_equition(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
+        glm::vec3 a = v1 - v2, b = v1 - v3;
+        a = glm::vec3(
+            a[1] * b[2] - a[2] * b[1], a[2] * b[0] - a[0] * b[2], a[0] * b[1] - a[1] * b[0]);
+        b = a * a;
+        if (b[0] + b[1] + b[2] == 0) return glm::vec4(1, 0, 0, 0);
+        a = a / glm::vec3(sqrt(b[0] + b[1] + b[2]));
+        b = a * v1;
+        return glm::vec4(a[0], a[1], a[2], -b[0] - b[1] - b[2]);
+    }
+
 #include "Labs/2-GeometryProcessing/marching_cubes_table.h"
 
     /******************* 1. Mesh Subdivision *****************/
@@ -159,7 +170,6 @@ namespace VCX::Labs::GeometryProcessing {
                 }
             }
             output.TexCoords = texco;
-            // printf("%f,%f\n", texco[13][0], texco[13][1]);
         }
     }
 
@@ -170,6 +180,35 @@ namespace VCX::Labs::GeometryProcessing {
         float                       valid_pair_threshold,
         float                       simplification_ratio) {
         // your code here
+        output.Positions = input.Positions;
+        DCEL & links     = *new DCEL;
+        links.AddFaces(input.Indices);
+        std::vector<glm::f32mat4x4> Qs;
+        for (int i = 0; i < input.Positions.size(); i++) {
+            DCEL::Vertex                        v     = links.GetVertex(i);
+            std::vector<const DCEL::Triangle *> faces = v.GetFaces();
+            std::vector<glm::vec4>              ps;
+            for (const DCEL::Triangle * f : faces) {
+                uint32_t v_indx[3];
+                for (int cnt = 0; cnt < 3; cnt++) v_indx[cnt] = *f->Indices(cnt);
+                ps.push_back(plane_equition(
+                    input.Positions[v_indx[0]],
+                    input.Positions[v_indx[1]],
+                    input.Positions[v_indx[2]]));
+            }
+            glm::f32mat4x4 Q(0.0);
+            for (glm::vec4 p : ps) {
+                for (int a = 0; a < 4; a++)
+                    for (int b = 0; b < 4; b++) Q[a][b] = Q[a][b] + p[a] * p[b];
+            }
+            Qs.push_back(Q);
+        }
+        std::map<uint64_t, uint32_t> record;
+        std::map<uint64_t, uint32_t> cost;
+        std::vector<uint64_t>        valid_pair;
+        for (int i = 0; i < input.Positions.size(); i++) {
+            for (int j = 0; j < input.Positions.size(); j++) {}
+        }
     }
 
     /******************* 4. Mesh Smoothing *****************/
