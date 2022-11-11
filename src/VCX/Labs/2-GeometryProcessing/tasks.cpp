@@ -12,7 +12,7 @@
 #include "Labs/2-GeometryProcessing/tasks.h"
 
 namespace VCX::Labs::GeometryProcessing {
-
+#define MAP_PAIR(a, b) ((uint64_t) (a + b) << 32) + abs((long long) ((long) a - (long) b))
     float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         glm::vec3 d1  = v1 - v3;
         glm::vec3 d2  = v2 - v3;
@@ -206,6 +206,11 @@ namespace VCX::Labs::GeometryProcessing {
         std::map<uint64_t, uint32_t> record;
         std::map<uint64_t, uint32_t> cost;
         std::vector<uint64_t>        valid_pair;
+        for (DCEL::HalfEdge const * e : links.GetEdges()) {
+            std::uint32_t v1 = e->From();
+            std::uint32_t v2 = e->To();
+            record[((v1 - v2))];
+        }
         for (int i = 0; i < input.Positions.size(); i++) {
             for (int j = 0; j < input.Positions.size(); j++) {}
         }
@@ -233,14 +238,12 @@ namespace VCX::Labs::GeometryProcessing {
                 std::uint32_t v2 = e->From();
                 std::uint32_t v3 = e->To();
                 if (useUniformWeight) {
-                    map_w[((uint64_t) v2 << 32) + v3] = 1.0;
-                    map_w[((uint64_t) v3 << 32) + v2] = 1.0;
+                    map_w[MAP_PAIR(v2, v3)] = 1.0;
                 } else {
-                    map_w[((uint64_t) v2 << 32) + v3] =
+                    map_w[MAP_PAIR(v2, v3)] =
                         my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v1]);
-                    map_w[((uint64_t) v2 << 32) + v3] = map_w[((uint64_t) v2 << 32) + v3]
+                    map_w[MAP_PAIR(v2, v3)] = map_w[MAP_PAIR(v2, v3)]
                         + my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v0]);
-                    map_w[((uint64_t) v3 << 32) + v2] = map_w[((uint64_t) v2 << 32) + v3];
                 }
             }
             for (std::size_t i = 0; i < Old.Positions.size(); ++i) {
@@ -251,10 +254,9 @@ namespace VCX::Labs::GeometryProcessing {
                 float                               W = 0;
                 for (int j = 0; j < neighbor_list.size(); j++) {
                     uint32_t v2 = i, v3 = neighbor_list[j];
-                    pos = pos
-                        + Old.Positions[neighbor_list[j]]
-                            * glm::vec3(map_w[((uint64_t) v2 << 32) + v3]);
-                    W += map_w[((uint64_t) v2 << 32) + v3];
+                    pos =
+                        pos + Old.Positions[neighbor_list[j]] * glm::vec3(map_w[MAP_PAIR(v2, v3)]);
+                    W += map_w[MAP_PAIR(v2, v3)];
                 }
                 pos = pos / glm::vec3(W);
                 pos = pos * glm::vec3(lambda) + Old.Positions[i] * glm::vec3(1 - lambda);
