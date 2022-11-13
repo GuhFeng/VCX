@@ -26,7 +26,9 @@ namespace VCX::Labs::Common::ImGuiHelper {
         ImGui::Text("Min: (%.0f, %.0f)", regionX, regionY);
         ImGui::Text("Max: (%.0f, %.0f)", regionX + regionSize, regionY + regionSize);
         ImVec2 uv0 = ImVec2(regionX / width, flipped ? 1 - regionY / height : regionY / height);
-        ImVec2 uv1 = ImVec2((regionX + regionSize) / width, flipped ? 1 - (regionY + regionSize) / height : (regionY + regionSize) / height);
+        ImVec2 uv1 = ImVec2(
+            (regionX + regionSize) / width,
+            flipped ? 1 - (regionY + regionSize) / height : (regionY + regionSize) / height);
         ImGui::Image(
             reinterpret_cast<void *>(std::uintptr_t(tex.Get())),
             ImVec2(regionSize * zoomLevel, regionSize * zoomLevel),
@@ -41,7 +43,7 @@ namespace VCX::Labs::Common::ImGuiHelper {
         Engine::GL::UniqueTexture2D const &     tex,
         std::pair<std::uint32_t, std::uint32_t> texSize,
         bool const                              flipped) {
-        static char path[128]   = "a.png";
+        static char path[128]   = "../../../../Lab2_Report/img/a.png";
         bool        enableWrite = ImGui::Button("Save PNG Image");
         static bool saving      = true;
         ImGui::SameLine();
