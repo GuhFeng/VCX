@@ -13,12 +13,31 @@
 
 namespace VCX::Labs::GeometryProcessing {
 
-#define MAP_PAIR(a, b) ((uint64_t) (a + b) << 32) + abs((long long) ((long) a - (long) b))
+#define MAP_PAIR(a, b) \
+    (((uint64_t) ((long long) a + b) << 32) + abs((long long) ((long) a - (long) b)))
 
-#define INDEX_CUBE(a, b, c, n) (a - 1) * n * n + b(b - 1) * n + c - 1
+#define INDEX_POS(a, b, c, t) \
+    ((a + ((t >> 0) & 1)) * 100 * 100 * 4 + (b + ((t >> 1) & 1)) * 100 * 2 + c + ((t >> 2) & 1))
 
-#define VERTEX_I(p, i) \
-    glm::vec3((p[0] + (i & 1) * dx), p[1] + ((i >> 1) & 1) * dx, p[2] + ((i >> 2) & 1) * dx)
+#define VERTEX_POSI(p, i) \
+    (glm::vec3((p[0] + (i & 1) * dx), p[1] + ((i >> 1) & 1) * dx, p[2] + ((i >> 2) & 1) * dx))
+
+#define CUBE_PAIR(a, b, c, i, j) (MAP_PAIR(INDEX_POS(a, b, c, i), INDEX_POS(a, b, c, j)))
+
+    int cube_edges[12][2] = {
+        {0, 1},
+        {2, 3},
+        {4, 5},
+        {6, 7},
+        {0, 2},
+        {4, 6},
+        {1, 3},
+        {5, 7},
+        {0, 4},
+        {1, 5},
+        {2, 6},
+        {3, 7}
+    };
 
     float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         glm::vec3 d1  = v1 - v3;
@@ -30,15 +49,6 @@ namespace VCX::Labs::GeometryProcessing {
         if (COS >= 1 - 1e-12) return COS = 1 - 1e-12;
         if (COS <= -1 + 1e-12) return COS = -1 + 1e-12;
         return sqrt(COS / sqrt(1 - COS));
-    }
-
-    void show(const Engine::SurfaceMesh & mesh) {
-        printf("Positions: %ld \n", mesh.Positions.size());
-        for (glm::vec3 p : mesh.Positions) printf("%f %f %f   ", p.p, p.y, p.z);
-        printf("\nTriangles: %ld \n", (mesh.Indices.size() / 3));
-        for (int i = 0; i < mesh.Indices.size(); i += 3)
-            printf("%d %d %d   ", mesh.Indices[i], mesh.Indices[i + 1], mesh.Indices[i + 2]);
-        printf("\n");
     }
 
     glm::vec4 plane_equition(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
@@ -383,14 +393,51 @@ namespace VCX::Labs::GeometryProcessing {
         const float                                     dx,
         const int                                       n) {
         // your code here
-        std::vector<uint32_t>        cubes;
         std::map<uint64_t, uint32_t> indxs;
         for (int i = 0; i < n; i++) {
             for (int j = 0; j < n; j++) {
                 for (int k = 0; k < n; k++) {
                     uint32_t  sgns  = 0;
                     glm::vec3 pos_0 = grid_min + glm::vec3(i * dx, j * dx, k * dx);
-                    for (int a = 0; a < 8; a++) sgns += (sdf(VERTEX_I(pos_0, i)) > 0) << a;
+                    for (int a = 0; a < 8; a++) {
+                        sgns = sgns + ((sdf(VERTEX_POSI(pos_0, a)) > 0) << a);
+                    }
+                    for (int a = 0; a < 12; a++) {
+                        int   v1 = cube_edges[a][0], v2 = cube_edges[a][1];
+                        float d1 = sdf(VERTEX_POSI(pos_0, v1)), d2 = sdf(VERTEX_POSI(pos_0, v2));
+                        if (d1 * d2 < 0) {
+                            d1            = -d1;
+                            uint32_t tmp1 = INDEX_POS(i, j, k, v1);
+                            uint32_t tmp2 = INDEX_POS(i, j, k, v2);
+                            uint64_t tmp  = MAP_PAIR(tmp1, tmp2);
+                            if (! indxs.count(tmp)) {
+                                indxs[tmp] = output.Positions.size();
+                                output.Positions.push_back(
+                                    VERTEX_POSI(pos_0, v1) * glm::vec3(abs(d2 / (d1 + d2)))
+                                    + VERTEX_POSI(pos_0, v2) * glm::vec3(abs(d1 / (d1 + d2))));
+                            }
+                        }
+                    }
+                    uint32_t            e_sgns = c_EdgeStateTable[sgns];
+                    std::array<int, 16> e_link = c_EdgeOrdsTable[sgns];
+                    for (int a = 0; e_link[a] != -1; a = a + 3) {
+                        int e1 = e_link[a], e2 = e_link[a + 1], e3 = e_link[a + 2], v1, v2;
+                        v1            = cube_edges[e1][0];
+                        v2            = cube_edges[e1][1];
+                        uint32_t tmp1 = INDEX_POS(i, j, k, v1);
+                        uint32_t tmp2 = INDEX_POS(i, j, k, v2);
+                        output.Indices.push_back(indxs[MAP_PAIR(tmp1, tmp2)]);
+                        v1   = cube_edges[e2][0];
+                        v2   = cube_edges[e2][1];
+                        tmp1 = INDEX_POS(i, j, k, v1);
+                        tmp2 = INDEX_POS(i, j, k, v2);
+                        output.Indices.push_back(indxs[MAP_PAIR(tmp1, tmp2)]);
+                        v1   = cube_edges[e3][0];
+                        v2   = cube_edges[e3][1];
+                        tmp1 = INDEX_POS(i, j, k, v1);
+                        tmp2 = INDEX_POS(i, j, k, v2);
+                        output.Indices.push_back(indxs[MAP_PAIR(tmp1, tmp2)]);
+                    }
                 }
             }
         }
