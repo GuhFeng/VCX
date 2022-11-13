@@ -12,7 +12,14 @@
 #include "Labs/2-GeometryProcessing/tasks.h"
 
 namespace VCX::Labs::GeometryProcessing {
+
 #define MAP_PAIR(a, b) ((uint64_t) (a + b) << 32) + abs((long long) ((long) a - (long) b))
+
+#define INDEX_CUBE(a, b, c, n) (a - 1) * n * n + b(b - 1) * n + c - 1
+
+#define VERTEX_I(p, i) \
+    glm::vec3((p[0] + (i & 1) * dx), p[1] + ((i >> 1) & 1) * dx, p[2] + ((i >> 2) & 1) * dx)
+
     float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         glm::vec3 d1  = v1 - v3;
         glm::vec3 d2  = v2 - v3;
@@ -364,5 +371,16 @@ namespace VCX::Labs::GeometryProcessing {
         const float                                     dx,
         const int                                       n) {
         // your code here
+        std::vector<uint32_t>        cubes;
+        std::map<uint64_t, uint32_t> indxs;
+        for (int i = 0; i < n; i++) {
+            for (int j = 0; j < n; j++) {
+                for (int k = 0; k < n; k++) {
+                    uint32_t  sgns  = 0;
+                    glm::vec3 pos_0 = grid_min + glm::vec3(i * dx, j * dx, k * dx);
+                    for (int a = 0; a < 8; a++) sgns += (sdf(VERTEX_I(pos_0, i)) > 0) << a;
+                }
+            }
+        }
     }
 } // namespace VCX::Labs::GeometryProcessing
