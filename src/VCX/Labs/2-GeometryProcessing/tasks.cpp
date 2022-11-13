@@ -171,6 +171,7 @@ namespace VCX::Labs::GeometryProcessing {
             }
             output.TexCoords = texco;
         }
+        delete &links;
     }
 
     /******************* 3. Mesh Simplification *****************/
