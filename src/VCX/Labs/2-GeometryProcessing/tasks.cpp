@@ -23,11 +23,13 @@ namespace VCX::Labs::GeometryProcessing {
     float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         glm::vec3 d1  = v1 - v3;
         glm::vec3 d2  = v2 - v3;
-        double    COS = ((d1 * d2)[0] + (d1 * d2)[1] + (d1 * d2)[2]);
-        COS           = COS / (pow(((d1 * d1)[0] + (d1 * d1)[1] + (d1 * d1)[2]), 0.5));
-        COS           = COS / (pow(((d2 * d2)[0] + (d2 * d2)[1] + (d2 * d2)[2]), 0.5));
+        float     COS = ((d1 * d2)[0] + (d1 * d2)[1] + (d1 * d2)[2])
+            * ((d1 * d2)[0] + (d1 * d2)[1] + (d1 * d2)[2]);
+        COS = COS / ((d1 * d1)[0] + (d1 * d1)[1] + (d1 * d1)[2]);
+        COS = COS / ((d2 * d2)[0] + (d2 * d2)[1] + (d2 * d2)[2]);
         if (COS >= 1 - 1e-12) return COS = 1 - 1e-12;
-        return (COS / sqrt(1 - COS * COS)) / 1e3;
+        if (COS <= -1 + 1e-12) return COS = -1 + 1e-12;
+        return sqrt(COS / sqrt(1 - COS));
     }
 
     void show(const Engine::SurfaceMesh & mesh) {
@@ -191,7 +193,7 @@ namespace VCX::Labs::GeometryProcessing {
         output.Positions = input.Positions;
         DCEL & links     = *new DCEL;
         links.AddFaces(input.Indices);
-        std::vector<glm::f64mat4x4> Qs;
+        std::vector<glm::fmat4x4> Qs;
         for (int i = 0; i < input.Positions.size(); i++) {
             DCEL::Vertex                        v     = links.GetVertex(i);
             std::vector<const DCEL::Triangle *> faces = v.GetFaces();
@@ -204,18 +206,18 @@ namespace VCX::Labs::GeometryProcessing {
                     input.Positions[v_indx[1]],
                     input.Positions[v_indx[2]]));
             }
-            glm::f64mat4x4 Q(0.0);
+            glm::fmat4x4 Q(0.0);
             for (glm::vec4 p : ps) {
                 for (int a = 0; a < 4; a++)
                     for (int b = 0; b < 4; b++) Q[a][b] = Q[a][b] + p[a] * p[b];
             }
             Qs.push_back(Q);
         }
-        std::set<uint64_t>        records;
-        std::map<uint64_t, float> costs;
-        std::vector<uint64_t>     valid_pair_1;
-        std::vector<uint64_t>     valid_pair_2;
-        std::vector<glm::vec4>    vertexes;
+        std::set<uint64_t>     records;
+        std::vector<float>     costs;
+        std::vector<uint64_t>  valid_pair_1;
+        std::vector<uint64_t>  valid_pair_2;
+        std::vector<glm::vec4> vertexes;
         for (DCEL::HalfEdge const * e : links.GetEdges()) {
             std::uint32_t v1 = e->From();
             std::uint32_t v2 = e->To();
@@ -240,51 +242,62 @@ namespace VCX::Labs::GeometryProcessing {
             }
         }
         for (int i = 0; i < valid_pair_1.size(); i++) {
-            uint32_t       v1 = valid_pair_1[i], v2 = valid_pair_2[i];
-            glm::f64mat4x4 Q = Qs[v1] + Qs[v2];
-            glm::f64mat4x4 Q_new;
-            for (int j = 0; j < 3; j++)
-                for (int k = 0; k < 4; k++) Q_new[k][j] = Q[j][k];
-            Q_new[3][3] = 1;
+            uint32_t     v1 = valid_pair_1[i], v2 = valid_pair_2[i];
+            glm::fmat4x4 Q = Qs[v1] + Qs[v2];
+            glm::fmat4x4 Q_new(
+                Q[0][0],
+                Q[0][1],
+                Q[0][2],
+                0,
+                Q[1][0],
+                Q[1][1],
+                Q[1][2],
+                0,
+                Q[2][0],
+                Q[2][1],
+                Q[2][2],
+                0,
+                Q[3][0],
+                Q[3][1],
+                Q[3][2],
+                1);
             glm::vec4 v_new;
-            if (glm::determinant(Q) <= 1e-6) {
+            if (glm::determinant(Q) <= 0) {
                 glm::vec3 a = input.Positions[v1] + input.Positions[v2];
                 a           = a / glm::vec3(2);
                 v_new       = glm::vec4(a[0], a[1], a[2], 1);
             } else {
                 v_new = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
             }
-            /*
-            if (v_new[3] != 1) {
-                printf("Invalid! %d ", i);
-                printf("%.9f\n", glm::determinant(Q));
-            }*/
             vertexes.push_back(v_new);
             glm::vec4 tmp = Q * v_new;
-            costs[MAP_PAIR(v1, v2)] =
-                tmp[0] * v_new[0] + tmp[1] * v_new[1] + tmp[2] * v_new[2] + tmp[3] * v_new[3];
+            costs.push_back(
+                tmp[0] * v_new[0] + tmp[1] * v_new[1] + tmp[2] * v_new[2] + tmp[3] * v_new[3]);
         }
-        int                          dcnt = 0;
-        int                          dbg  = 100;
-        std::map<uint32_t, uint32_t> v_map;
-        for (int iter = 0; iter < (1 - simplification_ratio) * input.Positions.size(); iter++) {
+        int                   dcnt = 0;
+        int                   dbg  = 100;
+        std::vector<uint32_t> v_map;
+        size_t                numIter = (1 - simplification_ratio) * input.Positions.size();
+        for (int i = 0; i < input.Positions.size(); i++) v_map.push_back(-1);
+        for (int iter = 0; iter < numIter; iter++) {
             float tmp = 1000000;
             int   cnt = 0;
             for (int i = 0; i < valid_pair_1.size(); i++) {
                 uint32_t v1 = valid_pair_1[i], v2 = valid_pair_2[i];
-                if (tmp > costs[MAP_PAIR(v1, v2)]) {
+                if (tmp > costs[i]) {
                     cnt = i;
-                    tmp = costs[MAP_PAIR(v1, v2)];
+                    tmp = costs[i];
                 }
             }
             uint32_t v1 = valid_pair_1[cnt], v2 = valid_pair_2[cnt];
             uint32_t tmp1 = v1, tmp2 = v2;
-            costs[MAP_PAIR(v1, v2)] = 100000;
+            costs[cnt] = 100000;
             glm::vec3 new_pos(vertexes[cnt][0], vertexes[cnt][1], vertexes[cnt][2]);
             output.Positions.push_back(new_pos);
+            v_map.push_back(-1);
             uint32_t v3 = output.Positions.size() - 1;
-            while (v_map.count(v1)) v1 = v_map[v1];
-            while (v_map.count(v2)) v2 = v_map[v2];
+            while (v_map[v1] != -1) v1 = v_map[v1];
+            while (v_map[v2] != -1) v2 = v_map[v2];
             v_map[v1]   = v3;
             v_map[v2]   = v3;
             v_map[tmp1] = v3;
@@ -296,9 +309,9 @@ namespace VCX::Labs::GeometryProcessing {
             uint32_t v1 = input.Indices[i];
             uint32_t v2 = input.Indices[i + 1];
             uint32_t v3 = input.Indices[i + 2];
-            while (v_map.count(v1)) v1 = v_map[v1];
-            while (v_map.count(v2)) v2 = v_map[v2];
-            while (v_map.count(v3)) v3 = v_map[v3];
+            while (v_map[v1] != -1) v1 = v_map[v1];
+            while (v_map[v2] != -1) v2 = v_map[v2];
+            while (v_map[v3] != -1) v3 = v_map[v3];
             if (v1 == v2 or v1 == v3 or v2 == v3) continue;
             else {
                 output.Indices.push_back(v1);
@@ -334,8 +347,7 @@ namespace VCX::Labs::GeometryProcessing {
                     map_w[MAP_PAIR(v2, v3)] = 1.0;
                 } else {
                     map_w[MAP_PAIR(v2, v3)] =
-                        my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v1]);
-                    map_w[MAP_PAIR(v2, v3)] = map_w[MAP_PAIR(v2, v3)]
+                        my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v1])
                         + my_cot(Old.Positions[v2], Old.Positions[v3], Old.Positions[v0]);
                 }
             }
