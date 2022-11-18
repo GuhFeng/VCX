@@ -362,7 +362,8 @@ namespace VCX::Labs::GeometryProcessing {
                     tmp[0] * v_new[0] + tmp[1] * v_new[1] + tmp[2] * v_new[2] + tmp[3] * v_new[3];
             }
         }
-        printf("%d\n", output.Indices.size());
+        std::set<uint32_t> cnt;
+        for (int i = 0; i < output.Indices.size(); i++) { cnt.insert(output.Indices[i]); }
         delete &links;
     }
 
