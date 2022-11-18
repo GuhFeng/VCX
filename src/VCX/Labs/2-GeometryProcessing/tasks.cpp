@@ -201,6 +201,7 @@ namespace VCX::Labs::GeometryProcessing {
         float                       simplification_ratio) {
         // your code here
         output.Positions = input.Positions;
+        output.Indices   = input.Indices;
         DCEL & links     = *new DCEL;
         links.AddFaces(input.Indices);
         std::vector<glm::fmat4x4> Qs;
@@ -224,6 +225,7 @@ namespace VCX::Labs::GeometryProcessing {
             Qs.push_back(Q);
         }
         std::set<uint64_t>     records;
+        std::vector<uint32_t>  valid;
         std::vector<float>     costs;
         std::vector<uint64_t>  valid_pair_1;
         std::vector<uint64_t>  valid_pair_2;
@@ -283,52 +285,84 @@ namespace VCX::Labs::GeometryProcessing {
             glm::vec4 tmp = Q * v_new;
             costs.push_back(
                 tmp[0] * v_new[0] + tmp[1] * v_new[1] + tmp[2] * v_new[2] + tmp[3] * v_new[3]);
+            valid.push_back(1);
         }
-        int                   dcnt = 0;
-        int                   dbg  = 100;
-        std::vector<uint32_t> v_map;
-        size_t                numIter = (1 - simplification_ratio) * input.Positions.size();
-        for (int i = 0; i < input.Positions.size(); i++) v_map.push_back(-1);
-        for (int iter = 0; iter < numIter; iter++) {
-            float tmp = 1000000;
-            int   cnt = 0;
-            for (int i = 0; i < valid_pair_1.size(); i++) {
-                uint32_t v1 = valid_pair_1[i], v2 = valid_pair_2[i];
-                if (tmp > costs[i]) {
-                    cnt = i;
-                    tmp = costs[i];
+        size_t iter_num = (1 - simplification_ratio) * input.Positions.size(),
+               pair_num = valid_pair_1.size();
+        for (int iter_cnt = 0; iter_cnt <= iter_num; iter_cnt++) {
+            uint32_t indx_del = 0;
+            float    min_cost = INFINITY;
+            for (uint32_t i = 0; i < pair_num; i++) {
+                if (! valid[i]) continue;
+                if (min_cost > costs[i]) {
+                    indx_del = i;
+                    min_cost = costs[i];
                 }
             }
-            uint32_t v1 = valid_pair_1[cnt], v2 = valid_pair_2[cnt];
-            uint32_t tmp1 = v1, tmp2 = v2;
-            costs[cnt] = 100000;
-            glm::vec3 new_pos(vertexes[cnt][0], vertexes[cnt][1], vertexes[cnt][2]);
-            output.Positions.push_back(new_pos);
-            v_map.push_back(-1);
-            uint32_t v3 = output.Positions.size() - 1;
-            while (v_map[v1] != -1) v1 = v_map[v1];
-            while (v_map[v2] != -1) v2 = v_map[v2];
-            v_map[v1]   = v3;
-            v_map[v2]   = v3;
-            v_map[tmp1] = v3;
-            v_map[tmp2] = v3;
-            dcnt++;
-            if (dcnt == dbg) break;
-        }
-        for (int i = 0; i < input.Indices.size(); i = i + 3) {
-            uint32_t v1 = input.Indices[i];
-            uint32_t v2 = input.Indices[i + 1];
-            uint32_t v3 = input.Indices[i + 2];
-            while (v_map[v1] != -1) v1 = v_map[v1];
-            while (v_map[v2] != -1) v2 = v_map[v2];
-            while (v_map[v3] != -1) v3 = v_map[v3];
-            if (v1 == v2 or v1 == v3 or v2 == v3) continue;
-            else {
-                output.Indices.push_back(v1);
-                output.Indices.push_back(v2);
-                output.Indices.push_back(v3);
+            valid[indx_del]                          = 0;
+            output.Positions[valid_pair_1[indx_del]] = vertexes[indx_del];
+            for (int i = 0; i < output.Indices.size(); i++) {
+                if (output.Indices[i] == valid_pair_2[indx_del]) {
+                    output.Indices[i] = valid_pair_1[indx_del];
+                }
+            }
+            for (int i = 0; i < output.Indices.size(); i = i + 3) {
+                if (output.Indices[i] == output.Indices[i + 1]
+                    || output.Indices[i + 2] == output.Indices[i + 1]
+                    || output.Indices[i + 2] == output.Indices[i]) {
+                    output.Indices.erase(
+                        output.Indices.begin() + i, output.Indices.begin() + i + 3);
+                    i = i - 3;
+                }
+            }
+            for (int i = 0; i < pair_num; i++) {
+                if (! valid[i]) continue;
+                if (valid_pair_1[i] == valid_pair_2[indx_del])
+                    valid_pair_1[i] = valid_pair_1[indx_del];
+                if (valid_pair_2[i] == valid_pair_2[indx_del])
+                    valid_pair_2[i] = valid_pair_1[indx_del];
+                if (valid_pair_1[i] == valid_pair_2[i]) valid[i] = 0;
+            }
+            Qs[valid_pair_1[indx_del]] = Qs[valid_pair_1[indx_del]] + Qs[valid_pair_2[indx_del]];
+            for (int i = 0; i < pair_num; i++) {
+                if (! valid[i]) continue;
+                uint32_t v1 = valid_pair_1[i], v2 = valid_pair_2[i];
+                if ((v1 != valid_pair_1[indx_del] && v1 != valid_pair_2[indx_del])
+                    && (v2 != valid_pair_1[indx_del] && v2 != valid_pair_2[indx_del]))
+                    continue;
+                glm::fmat4x4 Q = Qs[v1] + Qs[v2];
+                glm::fmat4x4 Q_new(
+                    Q[0][0],
+                    Q[0][1],
+                    Q[0][2],
+                    0,
+                    Q[1][0],
+                    Q[1][1],
+                    Q[1][2],
+                    0,
+                    Q[2][0],
+                    Q[2][1],
+                    Q[2][2],
+                    0,
+                    Q[3][0],
+                    Q[3][1],
+                    Q[3][2],
+                    1);
+                glm::vec4 v_new;
+                if (glm::determinant(Q) <= 0) {
+                    glm::vec3 a = input.Positions[v1] + input.Positions[v2];
+                    a           = a / glm::vec3(2);
+                    v_new       = glm::vec4(a[0], a[1], a[2], 1);
+                } else {
+                    v_new = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
+                }
+                vertexes[i]   = v_new;
+                glm::vec4 tmp = Q * v_new;
+                costs[i] =
+                    tmp[0] * v_new[0] + tmp[1] * v_new[1] + tmp[2] * v_new[2] + tmp[3] * v_new[3];
             }
         }
+        printf("%d\n", output.Indices.size());
         delete &links;
     }
 
