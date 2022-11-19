@@ -16,13 +16,13 @@ namespace VCX::Labs::GeometryProcessing {
 #define MAP_PAIR(a, b) \
     (((uint64_t) ((long long) a + b) << 32) + abs((long long) ((long) a - (long) b)))
 
-#define INDEX_POS(a, b, c, t) \
+#define NODE_MAP(a, b, c, t) \
     ((a + ((t >> 0) & 1)) * 100 * 100 * 4 + (b + ((t >> 1) & 1)) * 100 * 2 + c + ((t >> 2) & 1))
 
 #define VERTEX_POSI(p, i) \
     (glm::vec3((p[0] + (i & 1) * dx), p[1] + ((i >> 1) & 1) * dx, p[2] + ((i >> 2) & 1) * dx))
 
-#define CUBE_PAIR(a, b, c, i, j) (MAP_PAIR(INDEX_POS(a, b, c, i), INDEX_POS(a, b, c, j)))
+#define EDGE_MAP(a, b, c, i, j) (MAP_PAIR(NODE_MAP(a, b, c, i), NODE_MAP(a, b, c, j)))
 
     int cube_edges[12][2] = {
         {0, 1},
@@ -425,8 +425,8 @@ namespace VCX::Labs::GeometryProcessing {
                         float d1 = sdf(VERTEX_POSI(pos_0, v1)), d2 = sdf(VERTEX_POSI(pos_0, v2));
                         if (d1 * d2 < 0) {
                             d1 = -d1;
-                            if (! indxs.count(CUBE_PAIR(i, j, k, v1, v2))) {
-                                indxs[CUBE_PAIR(i, j, k, v1, v2)] = output.Positions.size();
+                            if (! indxs.count(EDGE_MAP(i, j, k, v1, v2))) {
+                                indxs[EDGE_MAP(i, j, k, v1, v2)] = output.Positions.size();
                                 output.Positions.push_back(
                                     VERTEX_POSI(pos_0, v1) * glm::vec3(abs(d2 / (d1 + d2)))
                                     + VERTEX_POSI(pos_0, v2) * glm::vec3(abs(d1 / (d1 + d2))));
@@ -439,13 +439,13 @@ namespace VCX::Labs::GeometryProcessing {
                         int e1 = e_link[a], e2 = e_link[a + 1], e3 = e_link[a + 2], v1, v2;
                         v1 = cube_edges[e1][0];
                         v2 = cube_edges[e1][1];
-                        output.Indices.push_back(indxs[CUBE_PAIR(i, j, k, v1, v2)]);
+                        output.Indices.push_back(indxs[EDGE_MAP(i, j, k, v1, v2)]);
                         v1 = cube_edges[e2][0];
                         v2 = cube_edges[e2][1];
-                        output.Indices.push_back(indxs[CUBE_PAIR(i, j, k, v1, v2)]);
+                        output.Indices.push_back(indxs[EDGE_MAP(i, j, k, v1, v2)]);
                         v1 = cube_edges[e3][0];
                         v2 = cube_edges[e3][1];
-                        output.Indices.push_back(indxs[CUBE_PAIR(i, j, k, v1, v2)]);
+                        output.Indices.push_back(indxs[EDGE_MAP(i, j, k, v1, v2)]);
                     }
                 }
             }
