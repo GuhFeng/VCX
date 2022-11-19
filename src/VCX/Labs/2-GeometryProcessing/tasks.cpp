@@ -95,15 +95,14 @@ namespace VCX::Labs::GeometryProcessing {
                 pos = pos + (Old.Positions[v0] + Old.Positions[v1]) * (glm::vec3(0.125));
                 pos = pos + (Old.Positions[v2] + Old.Positions[v3]) * (glm::vec3(0.375));
                 New.Positions.push_back(pos);
-                map_record[((uint64_t) (v2) << 32) + v3] = New.Positions.size() - 1;
-                map_record[((uint64_t) (v3) << 32) + v2] = New.Positions.size() - 1;
+                map_record[MAP_PAIR(v2, v3)] = New.Positions.size() - 1;
             }
             for (int i = 0; i < Old.Indices.size(); i = i + 3) {
                 const std::uint32_t * f  = Old.Indices.data() + i;
                 uint32_t              v1 = f[0], v2 = f[1], v3 = f[2];
-                uint32_t              v4 = map_record[((uint64_t) (v2) << 32) + v1];
-                uint32_t              v5 = map_record[((uint64_t) (v3) << 32) + v1];
-                uint32_t              v6 = map_record[((uint64_t) (v3) << 32) + v2];
+                uint32_t              v4 = map_record[MAP_PAIR(v2, v1)];
+                uint32_t              v5 = map_record[MAP_PAIR(v1, v3)];
+                uint32_t              v6 = map_record[MAP_PAIR(v2, v3)];
                 New.Indices.push_back(v1);
                 New.Indices.push_back(v4);
                 New.Indices.push_back(v5);
@@ -174,18 +173,10 @@ namespace VCX::Labs::GeometryProcessing {
                     continue;
                 }
                 std::vector<uint32_t> v_neighbors = v.GetNeighbors();
-                std::vector<float>    Dis;
-                float                 D_sum = 0;
-                for (uint32_t u : v_neighbors) {
-                    glm::lowp_vec2 d = output.TexCoords[i] - output.TexCoords[u];
-                    d                = d * d;
-                    Dis.push_back(1);
-                    D_sum = D_sum + 1;
-                }
                 texco.push_back(glm::vec2(0));
-                for (int j = 0; j < Dis.size(); j++) {
+                for (int j = 0; j < v_neighbors.size(); j++) {
                     uint32_t u = v_neighbors[j];
-                    texco[i]   = texco[i] + glm::vec2(Dis[j] / D_sum) * output.TexCoords[u];
+                    texco[i] = texco[i] + glm::vec2(1.0 / v_neighbors.size()) * output.TexCoords[u];
                 }
             }
             output.TexCoords = texco;
@@ -224,21 +215,24 @@ namespace VCX::Labs::GeometryProcessing {
             }
             Qs.push_back(Q);
         }
-        std::set<uint64_t>     records;
-        std::vector<uint32_t>  valid;
-        std::vector<float>     costs;
-        std::vector<uint64_t>  valid_pair_1;
-        std::vector<uint64_t>  valid_pair_2;
-        std::vector<glm::vec4> vertexes;
+        std::set<uint64_t>           records;
+        std::map<uint64_t, uint32_t> pair_map;
+        std::vector<uint32_t>        valid;
+        std::vector<float>           costs;
+        std::vector<uint64_t>        valid_pair_1;
+        std::vector<uint64_t>        valid_pair_2;
+        std::vector<glm::vec4>       vertexes;
         for (DCEL::HalfEdge const * e : links.GetEdges()) {
             std::uint32_t v1 = e->From();
             std::uint32_t v2 = e->To();
             valid_pair_1.push_back(v1);
             valid_pair_2.push_back(v2);
             records.insert(MAP_PAIR(v1, v2));
+            pair_map[MAP_PAIR(v1, v2)] = valid_pair_1.size() - 1;
         }
+        uint32_t edge_pair_num = valid_pair_1.size();
         for (int i = 0; i < input.Positions.size(); i++) {
-            for (int j = 0; j < input.Positions.size(); j++) {
+            for (int j = i; j < input.Positions.size(); j++) {
                 uint64_t record = *records.upper_bound(MAP_PAIR(i, j));
                 if (record == MAP_PAIR(i, j)) continue;
                 else {
@@ -249,6 +243,7 @@ namespace VCX::Labs::GeometryProcessing {
                         valid_pair_1.push_back(i);
                         valid_pair_2.push_back(j);
                         records.insert(MAP_PAIR(i, j));
+                        pair_map[MAP_PAIR(i, j)] = valid_pair_1.size() - 1;
                     }
                 }
             }
@@ -274,13 +269,7 @@ namespace VCX::Labs::GeometryProcessing {
                 Q[3][2],
                 1);
             glm::vec4 v_new;
-            if (glm::determinant(Q) <= 0) {
-                glm::vec3 a = input.Positions[v1] + input.Positions[v2];
-                a           = a / glm::vec3(2);
-                v_new       = glm::vec4(a[0], a[1], a[2], 1);
-            } else {
-                v_new = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
-            }
+            v_new = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
             vertexes.push_back(v_new);
             glm::vec4 tmp = Q * v_new;
             costs.push_back(
@@ -349,13 +338,7 @@ namespace VCX::Labs::GeometryProcessing {
                     Q[3][2],
                     1);
                 glm::vec4 v_new;
-                if (glm::determinant(Q) <= 0) {
-                    glm::vec3 a = input.Positions[v1] + input.Positions[v2];
-                    a           = a / glm::vec3(2);
-                    v_new       = glm::vec4(a[0], a[1], a[2], 1);
-                } else {
-                    v_new = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
-                }
+                v_new         = glm::inverse(Q_new) * glm::vec4(0, 0, 0, 1);
                 vertexes[i]   = v_new;
                 glm::vec4 tmp = Q * v_new;
                 costs[i] =
