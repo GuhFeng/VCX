@@ -1,9 +1,9 @@
 #version 410 core
 
-layout(location = 0) in  vec3 v_Position;
-layout(location = 1) in  vec3 v_Normal;
-layout(location = 2) in  vec2 v_TexCoord;
-layout(location = 3) in  vec4 v_LightSpacePosition;
+layout(location = 0) in vec3 v_Position;
+layout(location = 1) in vec3 v_Normal;
+layout(location = 2) in vec2 v_TexCoord;
+layout(location = 3) in vec4 v_LightSpacePosition;
 
 layout(location = 0) out vec4 f_Color;
 
@@ -32,39 +32,53 @@ uniform sampler2D u_DiffuseMap;
 uniform sampler2D u_SpecularMap;
 uniform sampler2D u_ShadowMap;
 
-float Shadow(vec4 lightSpacePosition, vec3 normal, vec3 lightDir) {
-    // return 1. if point in shadow, else return 0.
-    vec3 pos = lightSpacePosition.xyz / lightSpacePosition.w;
-    pos = pos * 0.5 + 0.5;
-
-    // your code here: closestDepth = ?
-    float closestDepth = 0;
-    // your code end
-
-    float curDepth = pos.z;
-    float bias = max(1e-3 * (1.0 - dot(normal, lightDir)), 1e-4);
-    float shadow = (curDepth - bias > closestDepth ? 1.0 : 0.0);
-    if (pos.z > 1.0 || pos.x < 0. || pos.x > 1. || pos.y < 0. || pos.y > 1.) shadow = 0.0;
-    return shadow;
+float cos_vec(vec3 d1, vec3 d2) {
+    vec3 product = d1 * d2;
+    vec3 len_d1  = d1 * d1;
+    vec3 len_d2  = d2 * d2;
+    return (product[0] + product[1] + product[2]) / sqrt((len_d1[0] + len_d1[1] + len_d1[2]) * (len_d2[0] + len_d2[1] + len_d2[2]));
 }
 
 vec3 Shade(vec3 lightIntensity, vec3 lightDir, vec3 normal, vec3 viewDir, vec3 diffuseColor, vec3 specularColor, float shininess) {
     // your code here:
-    return vec3(0);
+    normal                = normalize(normal);
+    vec3 mirror           = normal * lightDir;
+    mirror                = normal * (mirror[0] + mirror[1] + mirror[2]);
+    vec3  lightDir_mirror = normalize(mirror + (mirror - lightDir));
+    float cos_theta       = cos_vec(lightDir, normal);
+    float cos_phi         = cos_vec(lightDir_mirror, viewDir);
+    vec3  final_color     = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
+    return final_color;
+}
+
+float Shadow(vec4 lightSpacePosition, vec3 normal, vec3 lightDir) {
+    // return 1. if point in shadow, else return 0.
+    vec3 pos = lightSpacePosition.xyz / lightSpacePosition.w;
+    pos      = pos * 0.5 + 0.5;
+
+    // your code here: closestDepth = ?
+    float closestDepth = texture(u_ShadowMap, pos.xy).r;
+    // your code end
+
+    float curDepth = pos.z;
+    float bias     = max(1e-3 * (1.0 - dot(normal, lightDir)), 1e-4);
+    float shadow   = (curDepth - bias > closestDepth ? 1.0 : 0.0);
+    if (pos.z > 1.0 || pos.x < 0. || pos.x > 1. || pos.y < 0. || pos.y > 1.) shadow = 0.0;
+    return shadow;
 }
 
 void main() {
     float gamma          = 2.2;
-    vec4  diffuseFactor  = texture(u_DiffuseMap , v_TexCoord).rgba;
+    vec4  diffuseFactor  = texture(u_DiffuseMap, v_TexCoord).rgba;
     vec4  specularFactor = texture(u_SpecularMap, v_TexCoord).rgba;
     if (diffuseFactor.a < .2) discard;
-    vec3  diffuseColor   = pow(diffuseFactor.rgb, vec3(gamma));
-    vec3  specularColor  = specularFactor.rgb;
-    float shininess      = specularFactor.a * 256;
-    vec3  normal         = normalize(v_Normal);
-    vec3  viewDir        = normalize(u_ViewPosition - v_Position);
+    vec3  diffuseColor  = pow(diffuseFactor.rgb, vec3(gamma));
+    vec3  specularColor = specularFactor.rgb;
+    float shininess     = specularFactor.a * 256;
+    vec3  normal        = normalize(v_Normal);
+    vec3  viewDir       = normalize(u_ViewPosition - v_Position);
     // Ambient component.
-    vec3  total = u_AmbientIntensity * u_AmbientScale * diffuseColor;
+    vec3 total = u_AmbientIntensity * u_AmbientScale * diffuseColor;
     // Only one light
     float shadow = Shadow(v_LightSpacePosition, normal, u_Lights[0].Direction);
     total += (1. - shadow) * Shade(u_Lights[0].Intensity, u_Lights[0].Direction, normal, viewDir, diffuseColor, specularColor, shininess);

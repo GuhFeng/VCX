@@ -1,7 +1,7 @@
 #version 410 core
 
-layout(location = 0) in  vec3 v_Position;
-layout(location = 1) in  vec3 v_Normal;
+layout(location = 0) in vec3 v_Position;
+layout(location = 1) in vec3 v_Normal;
 
 layout(location = 0) out vec4 f_Color;
 
@@ -27,14 +27,17 @@ layout(std140) uniform PassConstants {
 uniform vec3 u_CoolColor;
 uniform vec3 u_WarmColor;
 
-vec3 Shade (vec3 lightDir, vec3 normal) {
+vec3 Shade(vec3 lightDir, vec3 normal) {
     // your code here:
-    return vec3(0);
+    lightDir      = normalize(lightDir);
+    normal        = normalize(normal);
+    float product = dot(lightDir, normal);
+    return ((1 + product) / 2) * u_CoolColor + (1 - ((1 + product) / 2)) * u_WarmColor;
 }
 
 void main() {
     // your code here:
     float gamma = 2.2;
-    vec3 total = Shade(u_Lights[0].Direction, v_Normal);
-    f_Color = vec4(pow(total, vec3(1. / gamma)), 1.);
+    vec3  total = Shade(u_Lights[0].Direction, v_Normal);
+    f_Color     = vec4(pow(total, vec3(1. / gamma)), 1.);
 }
