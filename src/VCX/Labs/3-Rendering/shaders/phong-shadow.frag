@@ -47,7 +47,9 @@ vec3 Shade(vec3 lightIntensity, vec3 lightDir, vec3 normal, vec3 viewDir, vec3 d
     vec3  lightDir_mirror = normalize(mirror + (mirror - lightDir));
     float cos_theta       = cos_vec(lightDir, normal);
     float cos_phi         = cos_vec(lightDir_mirror, viewDir);
-    vec3  final_color     = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
+    if (cos_phi <= 0) cos_phi = 0;
+    if (cos_theta <= 0) cos_theta = 0;
+    vec3 final_color = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
     return final_color;
 }
 

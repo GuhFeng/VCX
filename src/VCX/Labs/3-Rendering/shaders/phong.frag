@@ -48,24 +48,34 @@ vec3 Shade(vec3 lightIntensity, vec3 lightDir, vec3 normal, vec3 viewDir, vec3 d
     normal                = normalize(normal);
     vec3 mirror           = normal * lightDir;
     mirror                = normal * (mirror[0] + mirror[1] + mirror[2]);
-    vec3  lightDir_mirror = normalize(mirror + (mirror - lightDir));
+    vec3  lightDir_mirror = normalize(mirror * 2 - lightDir);
     float cos_theta       = cos_vec(lightDir, normal);
     float cos_phi         = cos_vec(lightDir_mirror, viewDir);
     if (u_UseBlinn) {
         vec3 h  = normalize(lightDir + viewDir);
         cos_phi = cos_vec(normal, h);
     }
+    if (cos_phi <= 0) cos_phi = 0;
+    if (cos_theta <= 0) cos_theta = 0;
     vec3 final_color = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
     return final_color;
 }
 
 vec3 GetNormal() {
     // Bump mapping from paper: Bump Mapping Unparametrized Surfaces on the GPU
-    vec3 vn = normalize(v_Normal);
 
     // your code here:
-    vec3 bumpNormal = vn;
-
+    vec3  vn         = normalize(v_Normal);
+    vec3  posDX      = dFdx(v_Position.xyz);
+    vec3  posDY      = dFdy(v_Position.xyz);
+    vec3  r1         = cross(posDY, vn);
+    vec3  r2         = cross(vn, posDX);
+    float det        = dot(posDX, r1);
+    float Hll        = texture(u_HeightMap, v_TexCoord).x;
+    float Hlr        = texture(u_HeightMap, v_TexCoord + dFdx(v_TexCoord.xy)).x;
+    float Hul        = texture(u_HeightMap, v_TexCoord + dFdy(v_TexCoord.xy)).x;
+    vec3  surf_grad  = sign(det) * ((Hlr - Hll) * r1 + (Hul - Hll) * r2);
+    vec3  bumpNormal = normalize(abs(det) * vn - surf_grad);
     return bumpNormal != bumpNormal ? vn : normalize(vn * (1. - u_BumpMappingBlend) + bumpNormal * u_BumpMappingBlend);
 }
 
