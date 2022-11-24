@@ -33,10 +33,11 @@ uniform sampler2D   u_SpecularMap;
 uniform samplerCube u_ShadowCubeMap;
 
 float cos_vec(vec3 d1, vec3 d2) {
-    vec3 product = d1 * d2;
-    vec3 len_d1  = d1 * d1;
-    vec3 len_d2  = d2 * d2;
-    return (product[0] + product[1] + product[2]) / sqrt((len_d1[0] + len_d1[1] + len_d1[2]) * (len_d2[0] + len_d2[1] + len_d2[2]));
+    float product = dot(d1, d2);
+    if (product < 0) return 0;
+    float len_d1 = dot(d1, d1);
+    float len_d2 = dot(d2, d2);
+    return sqrt(product * product / (len_d1 * len_d2));
 }
 
 float Shadow(vec3 pos, vec3 lightPos) {
@@ -61,9 +62,7 @@ vec3 Shade(vec3 lightIntensity, vec3 lightDir, vec3 normal, vec3 viewDir, vec3 d
     vec3  lightDir_mirror = normalize(mirror + (mirror - lightDir));
     float cos_theta       = cos_vec(lightDir, normal);
     float cos_phi         = cos_vec(lightDir_mirror, viewDir);
-    if (cos_phi <= 0) cos_phi = 0;
-    if (cos_theta <= 0) cos_theta = 0;
-    vec3 final_color = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
+    vec3  final_color     = (diffuseColor * cos_theta + specularColor * pow(cos_phi, shininess)) * lightIntensity;
     return final_color;
 }
 
