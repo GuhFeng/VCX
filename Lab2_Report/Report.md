@@ -14,6 +14,16 @@
 // Map the edge (v2,v3) to the index of new vertex
 map_record[MAP_PAIR(v2, v3)] = New.Positions.size() - 1;
 ```
+最终的结果如下图所示：
+<center class="half">
+<img src="./img/task1_cube.png" width=300/>
+<img src="./img/task1_dino.png" width=300/>
+     </center>
+
+<center class="half">  
+<img src="./img/task1_lock.png" width=300/>
+<img src="./img/task1_arm.png" width=300/>
+</center>
 
 ## Task 2: Spring-Mass Mesh Parameterization
 
@@ -32,6 +42,10 @@ for (int j = 0; j < v_neighbors.size(); j++) {
     texco[i] = texco[i] + glm::vec2(1.0 / v_neighbors.size()) * output.TexCoords[u];
 }
 ```
+最终的结果如下图所示：
+<center class="half">
+<img src="./img/task2.png" width=400/>
+</center>
 
 ## Task 3:  Mesh Simplification
 
@@ -50,6 +64,16 @@ glm::vec4 plane_equition(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
         return glm::vec4(a[0], a[1], a[2], -b[0] - b[1] - b[2]);
     }
 ```
+最终结果如下图所示：
+<center class="half">
+<img src="./img/task31.png" width=300/>
+<img src="./img/task32.png" width=300/>
+     </center>
+
+<center class="half">  
+<img src="./img/task33.png" width=300/>
+<img src="./img/task34.png" width=300/>
+</center>
 
 ## Task 4: Mesh Smoothing
 
@@ -58,6 +82,18 @@ glm::vec4 plane_equition(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 2. 计算权值
 3. 更新顶点：$v_i=(1-\lambda)v_i+\lambda v_i^*$
 为了实现的方便，我添加了一个函数`float my_cot(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3)`。由于`cot`可能会出现负值，我将所有的`cot`都取绝对值作为权重。
+
+最终结果如下图所示：
+<center class="half">
+<img src="./img/task41.png" width=300/>
+<img src="./img/task43.png" width=300/>
+     </center>
+<center class="half">  
+<img src="./img/task44.png" width=300/>
+<img src="./img/task42.png" width=300/>
+</center>
+
+
 
 ## Task 5: Marching Cubes
 
@@ -75,3 +111,12 @@ glm::vec4 plane_equition(glm::vec3 v1, glm::vec3 v2, glm::vec3 v3) {
 
 #define EDGE_MAP(a, b, c, i, j) (MAP_PAIR(NODE_MAP(a, b, c, i), NODE_MAP(a, b, c, j)))
 ```
+<center class="half">
+<img src="./img/task51.png" width=300/>
+<img src="./img/task52.png" width=300/>
+</center>
+
+<center class="half">  
+<img src="./img/task53.png" width=300/>
+<img src="./img/task54.png" width=300/>
+</center>
