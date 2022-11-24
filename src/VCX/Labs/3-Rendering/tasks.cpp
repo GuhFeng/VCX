@@ -24,7 +24,16 @@ namespace VCX::Labs::Rendering {
     /******************* 1. Ray-triangle intersection *****************/
     bool IntersectTriangle(Intersection & output, Ray const & ray, glm::vec3 const & p1, glm::vec3 const & p2, glm::vec3 const & p3) {
         // your code here
-
+        glm::vec3   v1 = p2 - p1, v2 = p3 - p1;
+        glm::vec3   d = ray.Direction, p0 = ray.Origin;
+        glm::mat3x3 M(-d[0], -d[1], -d[2], v1[0], v1[1], v1[2], v2[0], v2[1], v2[2]);
+        glm::vec3   out = glm::inverse(M) * (p0 - p1);
+        if (! glm::determinant(M)) return false;
+        output.t = out[0];
+        output.u = out[1];
+        output.v = out[2];
+        if (output.u <= 1 && output.u >= 0 && output.v <= 1 && output.v >= 0 && output.t >= 0)
+            return true;
         return false;
     }
 
