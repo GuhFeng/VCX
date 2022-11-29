@@ -31,7 +31,10 @@ vec3 Shade(vec3 lightDir, vec3 normal) {
     // your code here:
     lightDir      = normalize(lightDir);
     normal        = normalize(normal);
-    float product = dot(lightDir, normal);
+    float product = -dot(lightDir, normal);
+    if (product < -0.5) product = -1;
+    else if (product > 0.2) product = 1;
+    else product = 0;
     return ((1 + product) / 2) * u_CoolColor + (1 - ((1 + product) / 2)) * u_WarmColor;
 }
 
