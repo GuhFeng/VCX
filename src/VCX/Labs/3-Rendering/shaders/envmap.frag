@@ -47,7 +47,9 @@ void main() {
     // Environment component
 
     // your code here
-    vec4 env_Factor = texture(u_EnvironmentMap, v_Position);
+    vec3 I          = normalize(v_Position - u_ViewPosition);
+    vec3 R          = reflect(I, normalize(v_Normal));
+    vec4 env_Factor = vec4(texture(u_EnvironmentMap, R).rgb, 1.0);
     vec3 envColor   = pow(env_Factor.rgb, vec3(gamma));
     total += envColor * u_EnvironmentScale;
 
