@@ -63,8 +63,7 @@ namespace VCX::Labs::Rendering {
             glm::vec3 result(0.0f);
             /******************* 2. Whitted-style ray tracing *****************/
             // your code here
-            glm::vec3 d = ray.Direction;
-            d           = -glm::normalize(d);
+            glm::vec3 d = -glm::normalize(ray.Direction);
             for (const Engine::Light & light : intersector.InternalScene->Lights) {
                 glm::vec3 l;
                 float     attenuation;
@@ -81,13 +80,11 @@ namespace VCX::Labs::Rendering {
                             else {
                                 glm::vec3 hit_pos = new_hit.IntersectPosition;
                                 if (dot(l, l) <= dot(hit_pos - pos, l)) break;
+                                else if (new_hit.IntersectAlbedo.w < 0.2)
+                                    new_pos = new_hit.IntersectPosition;
                                 else {
-                                    if (new_hit.IntersectAlbedo.w < 0.2)
-                                        new_pos = new_hit.IntersectPosition;
-                                    else {
-                                        attenuation *= 0.5;
-                                        break;
-                                    }
+                                    attenuation *= (1 - new_hit.IntersectAlbedo.w);
+                                    break;
                                 }
                             }
                         }
@@ -103,14 +100,11 @@ namespace VCX::Labs::Rendering {
                         while (1) {
                             auto new_hit = intersector.IntersectRay(Ray(new_pos, l));
                             if (! new_hit.IntersectState) break;
+                            else if (new_hit.IntersectAlbedo.w < 0.2)
+                                new_pos = new_hit.IntersectPosition;
                             else {
-                                glm::vec3 hit_pos = new_hit.IntersectPosition;
-                                if (new_hit.IntersectAlbedo.w < 0.2)
-                                    new_pos = new_hit.IntersectPosition;
-                                else {
-                                    attenuation *= 0;
-                                    break;
-                                }
+                                attenuation *= (1 - new_hit.IntersectAlbedo.w);
+                                break;
                             }
                         }
                     }
