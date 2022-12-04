@@ -1,11 +1,10 @@
+#include "Labs/4-Animation/tasks.h"
+#include "CustomFunc.inl"
+#include "IKSystem.h"
 #include <Eigen/Dense>
 #include <Eigen/Sparse>
-#include <spdlog/spdlog.h>
 #include <iostream>
-#include "Labs/4-Animation/tasks.h"
-#include "IKSystem.h"
-#include "CustomFunc.inl"
-
+#include <spdlog/spdlog.h>
 
 namespace VCX::Labs::Animation {
     void ForwardKinematics(IKSystem & ik, int StartIndex) {
@@ -14,9 +13,11 @@ namespace VCX::Labs::Animation {
             ik.JointGlobalPosition[0] = ik.JointLocalOffset[0];
             StartIndex                = 1;
         }
-        
+
         for (int i = StartIndex; i < ik.JointLocalOffset.size(); i++) {
             // your code here: forward kinematics
+            glm::mat3x3 local_trans   = glm::mat3_cast(ik.JointLocalRotation[i]);
+            ik.JointGlobalPosition[i] = ik.JointGlobalPosition[i - 1] + local_trans * ik.JointLocalOffset[i];
         }
     }
 
@@ -30,7 +31,7 @@ namespace VCX::Labs::Animation {
 
     void InverseKinematicsFABR(IKSystem & ik, const glm::vec3 & EndPosition, int maxFABRIKIteration, float eps) {
         ForwardKinematics(ik, 0);
-        int nJoints = ik.NumJoints();
+        int                    nJoints = ik.NumJoints();
         std::vector<glm::vec3> backward_positions(nJoints, glm::vec3(0, 0, 0)), forward_positions(nJoints, glm::vec3(0, 0, 0));
         for (int IKIteration = 0; IKIteration < maxFABRIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; IKIteration++) {
             // task: fabr ik
@@ -44,7 +45,7 @@ namespace VCX::Labs::Animation {
 
             // forward update
             glm::vec3 now_position = ik.JointGlobalPosition[0];
-            forward_positions[0] = ik.JointGlobalPosition[0];
+            forward_positions[0]   = ik.JointGlobalPosition[0];
             for (int i = 0; i < nJoints - 1; i++) {
                 // your code here
             }
@@ -64,10 +65,10 @@ namespace VCX::Labs::Animation {
 
     IKSystem::Vec3ArrPtr IKSystem::BuildCustomTargetPosition() {
         // get function from https://www.wolframalpha.com/input/?i=Albert+Einstein+curve
-        int nums = 5000;
+        int nums      = 5000;
         using Vec3Arr = std::vector<glm::vec3>;
         std::shared_ptr<Vec3Arr> custom(new Vec3Arr(nums));
-        int index = 0;
+        int                      index = 0;
         for (int i = 0; i < nums; i++) {
             float x_val = 1.5e-3f * custom_x(92 * glm::pi<float>() * i / nums);
             float y_val = 1.5e-3f * custom_y(92 * glm::pi<float>() * i / nums);
@@ -80,17 +81,17 @@ namespace VCX::Labs::Animation {
 
     void AdvanceMassSpringSystem(MassSpringSystem & system, float const dt) {
         // your code here: rewrite following code
-        int const steps = 1000;
-        float const ddt = dt / steps; 
+        int const   steps = 1000;
+        float const ddt   = dt / steps;
         for (std::size_t s = 0; s < steps; s++) {
             std::vector<glm::vec3> forces(system.Positions.size(), glm::vec3(0));
             for (auto const spring : system.Springs) {
-                auto const p0 = spring.AdjIdx.first;
-                auto const p1 = spring.AdjIdx.second;
+                auto const      p0  = spring.AdjIdx.first;
+                auto const      p1  = spring.AdjIdx.second;
                 glm::vec3 const x01 = system.Positions[p1] - system.Positions[p0];
                 glm::vec3 const v01 = system.Velocities[p1] - system.Velocities[p0];
                 glm::vec3 const e01 = glm::normalize(x01);
-                glm::vec3 f = (system.Stiffness * (glm::length(x01) - spring.RestLength) + system.Damping * glm::dot(v01, e01)) * e01;
+                glm::vec3       f   = (system.Stiffness * (glm::length(x01) - spring.RestLength) + system.Damping * glm::dot(v01, e01)) * e01;
                 forces[p0] += f;
                 forces[p1] -= f;
             }
@@ -101,4 +102,4 @@ namespace VCX::Labs::Animation {
             }
         }
     }
-}
+} // namespace VCX::Labs::Animation
