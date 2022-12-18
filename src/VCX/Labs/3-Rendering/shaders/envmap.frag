@@ -45,7 +45,6 @@ void main() {
     // Ambient component.
     vec3 total = u_AmbientIntensity * u_AmbientScale * diffuseColor;
     // Environment component
-
     // your code here
     vec3 I          = normalize(v_Position - u_ViewPosition);
     vec3 R          = reflect(I, normalize(v_Normal));

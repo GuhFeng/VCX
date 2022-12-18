@@ -4,11 +4,11 @@
 
 本次 Lab 中，大家将会实现渲染部分介绍的几种重要的算法或思想：
 
- 1. Phong/Blinn-Phong 光照模型 （课件《光照与着色》P1-P20） 
- 2. 实时渲染中的环境映射技术 （课件《纹理映射》P20的效果）
- 3. 非真实感渲染 （课件《光照与着色》P43-P67）
- 4. 实时渲染中的阴影映射技术 （课件《纹理映射》P22-P23）
- 5. 光线追踪离线渲染框架 （课件《全局渲染》）
+1. Phong/Blinn-Phong 光照模型 （课件《光照与着色》P1-P20）
+2. 实时渲染中的环境映射技术 （课件《纹理映射》P20的效果）
+3. 非真实感渲染 （课件《光照与着色》P43-P67）
+4. 实时渲染中的阴影映射技术 （课件《纹理映射》P22-P23）
+5. 光线追踪离线渲染框架 （课件《全局渲染》）
 
 “渲染器是程序员的三大浪漫之一”。Lab 3 是所有 Lab 中完成后最有成就感的，在这次 Lab 中同学们将自己动手完成一个渲染器的构建。大家的任务是填补 `Labs/3-Rendering/tasks.cpp` 以及 `Labs/3-Rendering/shaders/*.*` 中的空缺部分，请参考下述具体任务的介绍。请务必**独立**完成自己的代码。
 
@@ -33,6 +33,7 @@ Blinn-Phong 光照算法实现的结果如下：
 ![](images/blinn-phong.png)
 
 在完成这个任务的同时，请在报告中回答下列问题：
+
 1. 顶点着色器和片段着色器的关系是什么样的？顶点着色器中的输出变量是如何传递到片段着色器当中的？
 2. 代码中的 `if (diffuseFactor.a < .2) discard;` 这行语句，作用是什么？为什么不能用 `if (diffuseFactor.a == 0.) discard;` 代替？
 
@@ -43,9 +44,10 @@ Blinn-Phong 光照算法实现的结果如下：
 ## Task 2: Environment Mapping (2')
 
 请理解并实现立方体贴图及环境映射的相关原理。参考资料（后者是前者的中文翻译）：
+
 1. https://learnopengl.com/Advanced-OpenGL/Cubemaps
 2. https://learnopengl-cn.github.io/04%20Advanced%20OpenGL/06%20Cubemaps/
-你需要实现 `shaders/skybox.vert` 中计算 `gl_Position` 的相关代码，以及 `shaders/envmap.frag` 中进行环境贴图采样的相关代码（提示：可采用 GLSL 内置的 `texture()` 和 `reflect()` 函数）。
+   你需要实现 `shaders/skybox.vert` 中计算 `gl_Position` 的相关代码，以及 `shaders/envmap.frag` 中进行环境贴图采样的相关代码（提示：可采用 GLSL 内置的 `texture()` 和 `reflect()` 函数）。
 
 算法实现的结果如下（这是 teapot 场景的渲染图）：
 
