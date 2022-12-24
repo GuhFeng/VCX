@@ -13,11 +13,13 @@ namespace VCX::Labs::Animation {
             ik.JointGlobalPosition[0] = ik.JointLocalOffset[0];
             StartIndex                = 1;
         }
-
+        glm::vec3 offset_tmp(0);
         for (int i = StartIndex; i < ik.JointLocalOffset.size(); i++) {
             // your code here: forward kinematics
             glm::mat3x3 local_trans   = glm::mat3_cast(ik.JointLocalRotation[i]);
             ik.JointGlobalPosition[i] = ik.JointGlobalPosition[i - 1] + local_trans * ik.JointLocalOffset[i];
+            offset_tmp += ik.JointLocalOffset;
+            ik.JointGlobalRotation[i] = glm::rotation(offset_tmp, ik.JointGlobalPosition[i] - ik.JointGlobalPosition[0]);
         }
     }
 
