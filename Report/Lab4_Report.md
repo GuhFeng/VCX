@@ -6,7 +6,7 @@
 
 ### 前向运动学
 
-给定每个关节相对于父关节的平移量以及每个关节的局部旋转，我们求出每个关节在世界坐标系下的位置和旋转。
+给定每个关节相对于父关节的平移量以及每个关节的局部旋转，可以直接求出每个关节在世界坐标系下的位置和旋转。
 
 ### CCD IK
 
@@ -28,4 +28,4 @@
 
 ## Mass-Spring System
 
-在这一部分中，我实现了隐式欧拉的弹簧质点系统。为了实现的方便，我分别加入了函数 `void partial_g((MassSpringSystem & system, std::vector<glm::vec3> & x, std::vector<glm::vec3> & y, std::vector<glm::vec3> & b, float h))`和函数 `void partial2_g(MassSpringSystem & system, std::vector<glm::vec3> & x, std::vector<glm::vec3> & y, std::vector<TRP> & A, float h)`来求能量函数$g$关于位置$x$的梯度和Hassan矩阵。此外，我们还要注意处理固定的点，这些点对应的各阶导数全为0。而后只要对照课件，计算出$y$，用牛顿迭代法，即可解出$x$和$v$。
+在这一部分中，我实现了隐式欧拉的弹簧质点系统。为了实现的方便，我分别加入了函数 `partial_g`和函数 `partial2_g`来求能量函数$g$关于位置$x$的梯度和Hassan矩阵。此外，我们还要注意处理固定的点，这些点对应的各阶导数全为0。而后只要对照课件，计算出$y$，用牛顿迭代法，即可解出$x$和$v$。为了保持动画的帧率，我将`steps`设置为3，将牛顿法的迭代次数设置成$20$。
