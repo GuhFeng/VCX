@@ -27,7 +27,7 @@ namespace VCX::Labs::Animation {
         }
         for (int i = 0; i < x.size(); i++) {
             if (system.Fixed[i])
-                b[i] = system.Mass * (x[i] - y[i]) / (h * h);
+                b[i] = glm::vec3(0);
         }
     }
     void partial2_g(MassSpringSystem & system, std::vector<glm::vec3> & x, std::vector<glm::vec3> & y, std::vector<TRP> & A, float h) {
@@ -103,9 +103,8 @@ namespace VCX::Labs::Animation {
             for (int i = ik.JointLocalOffset.size() - 1; i > 0; i--) {
                 glm::vec3 d1             = glm::normalize(EndPosition - ik.JointGlobalPosition[i - 1]);
                 glm::vec3 d2             = glm::normalize(ik.JointGlobalPosition[ik.JointLocalOffset.size() - 1] - ik.JointGlobalPosition[i - 1]);
-                glm::quat r              = glm::rotation(d2, d1);
-                ik.JointLocalRotation[i] = r * ik.JointLocalRotation[i];
-                ik.JointLocalOffset[i]   = r * ik.JointLocalOffset[i];
+                ik.JointLocalRotation[i] = glm::rotation(d2, d1) * ik.JointLocalRotation[i];
+                ik.JointLocalOffset[i]   = glm::rotation(d2, d1) * ik.JointLocalOffset[i];
                 ForwardKinematics(ik, i - 1);
             }
         }
@@ -123,8 +122,7 @@ namespace VCX::Labs::Animation {
 
             for (int i = nJoints - 2; i >= 0; i--) {
                 // your code here
-                glm::vec3 back_dir    = glm::normalize(ik.JointGlobalPosition[i] - next_position);
-                backward_positions[i] = backward_positions[i + 1] + back_dir * ik.JointOffsetLength[i + 1];
+                backward_positions[i] = backward_positions[i + 1] + glm::normalize(ik.JointGlobalPosition[i] - next_position) * ik.JointOffsetLength[i + 1];
                 next_position         = backward_positions[i];
             }
 
@@ -133,8 +131,7 @@ namespace VCX::Labs::Animation {
             forward_positions[0]   = ik.JointGlobalPosition[0];
             for (int i = 0; i < nJoints - 1; i++) {
                 // your code here
-                glm::vec3 forward_dir      = glm::normalize(backward_positions[i + 1] - now_position);
-                forward_positions[i + 1]   = forward_positions[i] + forward_dir * ik.JointOffsetLength[i + 1];
+                forward_positions[i + 1]   = forward_positions[i] + glm::normalize(backward_positions[i + 1] - now_position) * ik.JointOffsetLength[i + 1];
                 now_position               = forward_positions[i + 1];
                 ik.JointLocalOffset[i + 1] = forward_positions[i + 1] - forward_positions[i];
             }
@@ -159,10 +156,11 @@ namespace VCX::Labs::Animation {
         std::shared_ptr<Vec3Arr> custom(new Vec3Arr(nums));
         int                      index = 0;
         for (int i = 0; i < nums; i++) {
-            float x_val = 1.0 * i / nums;
-            float y_val = sin(2 * 3.14 * x_val);
+            float z_val = 0.5 * (2.0 * i / nums - 1);
+            float y_val = 0.5 * sin(4 * 3.14 * z_val);
+            float x_val = 0.5 * cos(4 * 3.14 * z_val);
             if (std::abs(x_val) < 1e-3 || std::abs(y_val) < 1e-3) continue;
-            (*custom)[index++] = glm::vec3(x_val, 0.0f, y_val);
+            (*custom)[index++] = glm::vec3(x_val, z_val, y_val);
         }
         custom->resize(index);
         return custom;
@@ -170,7 +168,7 @@ namespace VCX::Labs::Animation {
 
     void AdvanceMassSpringSystem(MassSpringSystem & system, float const dt) {
         // your code here: rewrite following code
-        int const   steps = 1;
+        int const   steps = 3;
         float const ddt   = dt / steps;
         for (std::size_t s = 0; s < steps; s++) {
             auto                       y(system.Positions);
@@ -183,7 +181,7 @@ namespace VCX::Labs::Animation {
             }
             auto x_iter = system.Positions;
             for (int i = 0; i < system.Positions.size(); i++) {
-                for (int j = 0; j < 3; j++) x_iter[i][j] = x_iter[i][j] + glm::gaussRand(0.0, 0.1);
+                for (int j = 0; j < 3; j++) x_iter[i][j] = x_iter[i][j] + glm::gaussRand(0.0, 0.05);
             }
             int   num_iter = 20;
             VECXF x_v;
@@ -204,6 +202,7 @@ namespace VCX::Labs::Animation {
                 }
             }
             for (int i = 0; i < system.Positions.size(); i++) {
+                if (system.Fixed[i]) continue;
                 for (int j = 0; j < 3; j++) {
                     system.Velocities[i][j] = (x_iter[i][j] - system.Positions[i][j]) / ddt;
                     system.Positions[i][j]  = x_iter[i][j];
