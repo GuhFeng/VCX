@@ -7,19 +7,18 @@
 #include <spdlog/spdlog.h>
 
 namespace VCX::Labs::Animation {
-    void ForwardKinematics(IKSystem & ik, int StartIndex) {
+    typedef Eigen::SparseMatrix<float> SPM;
+    typedef Eigen::Triplet<float>      TRP;
+    void                               ForwardKinematics(IKSystem & ik, int StartIndex) {
         if (StartIndex == 0) {
             ik.JointGlobalRotation[0] = ik.JointLocalRotation[0];
             ik.JointGlobalPosition[0] = ik.JointLocalOffset[0];
             StartIndex                = 1;
         }
-        glm::vec3 offset_tmp(0);
         for (int i = StartIndex; i < ik.JointLocalOffset.size(); i++) {
             // your code here: forward kinematics
-            glm::mat3x3 local_trans   = glm::mat3_cast(ik.JointLocalRotation[i]);
-            ik.JointGlobalPosition[i] = ik.JointGlobalPosition[i - 1] + local_trans * ik.JointLocalOffset[i];
-            offset_tmp += ik.JointLocalOffset;
-            ik.JointGlobalRotation[i] = glm::rotation(offset_tmp, ik.JointGlobalPosition[i] - ik.JointGlobalPosition[0]);
+            ik.JointGlobalPosition[i] = ik.JointGlobalPosition[i - 1] + glm::mat3_cast(ik.JointLocalRotation[i]) * ik.JointLocalOffset[i];
+            ik.JointGlobalRotation[i] = ik.JointLocalRotation[i] * ik.JointGlobalRotation[i - 1];
         }
     }
 
@@ -28,6 +27,12 @@ namespace VCX::Labs::Animation {
         // These functions will be useful: glm::normalize, glm::rotation, glm::quat * glm::quat
         for (int CCDIKIteration = 0; CCDIKIteration < maxCCDIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; CCDIKIteration++) {
             // your code here: ccd ik
+            for (int i = ik.JointLocalOffset.size() - 1; i > 0; i--) {
+                glm::vec3 d1             = glm::normalize(EndPosition - ik.JointGlobalPosition[i - 1]);
+                glm::vec3 d2             = glm::normalize(ik.JointGlobalPosition[ik.JointLocalOffset.size() - 1] - ik.JointGlobalPosition[i - 1]);
+                ik.JointLocalRotation[i] = glm::rotation(d2, d1) * ik.JointLocalRotation[i];
+                ForwardKinematics(ik, i - 1);
+            }
         }
     }
 
@@ -43,6 +48,9 @@ namespace VCX::Labs::Animation {
 
             for (int i = nJoints - 2; i >= 0; i--) {
                 // your code here
+                glm::vec3 back_dir    = glm::normalize(ik.JointGlobalPosition[i] - next_position);
+                backward_positions[i] = backward_positions[i + 1] + back_dir * ik.JointOffsetLength[i + 1];
+                next_position         = backward_positions[i];
             }
 
             // forward update
@@ -50,6 +58,9 @@ namespace VCX::Labs::Animation {
             forward_positions[0]   = ik.JointGlobalPosition[0];
             for (int i = 0; i < nJoints - 1; i++) {
                 // your code here
+                glm::vec3 forward_dir    = glm::normalize(backward_positions[i + 1] - now_position);
+                forward_positions[i + 1] = forward_positions[i] + forward_dir * ik.JointOffsetLength[i + 1];
+                now_position             = forward_positions[i + 1];
             }
             ik.JointGlobalPosition = forward_positions; // copy forward positions to joint_positions
         }
@@ -83,9 +94,11 @@ namespace VCX::Labs::Animation {
 
     void AdvanceMassSpringSystem(MassSpringSystem & system, float const dt) {
         // your code here: rewrite following code
-        int const   steps = 1000;
-        float const ddt   = dt / steps;
+        typedef Eigen::Triplet<float> Triplet;
+        int const                     steps = 1000;
+        float const                   ddt   = dt / steps;
         for (std::size_t s = 0; s < steps; s++) {
+            /*
             std::vector<glm::vec3> forces(system.Positions.size(), glm::vec3(0));
             for (auto const spring : system.Springs) {
                 auto const      p0  = spring.AdjIdx.first;
@@ -101,6 +114,17 @@ namespace VCX::Labs::Animation {
                 if (system.Fixed[i]) continue;
                 system.Velocities[i] += (glm::vec3(0, -system.Gravity, 0) + forces[i] / system.Mass) * ddt;
                 system.Positions[i] += system.Velocities[i] * ddt;
+            }
+            */
+            auto                       y(system.Positions);
+            Eigen::SparseMatrix<float> A(3 * system.Positions.size(), 3 * system.Positions.size());
+            std::vector<Triplet>       coeff;
+            std::vector<float>         diag;
+            for (std::size_t i = 0; i < system.Positions.size(); i++) {
+                if (system.Fixed[i])
+                    y[i] = system.Positions[i];
+                else
+                    y[i] = system.Positions[i] + ddt * system.Velocities[i] + ddt * ddt * glm::vec3(0, -system.Gravity, 0);
             }
         }
     }
