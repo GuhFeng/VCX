@@ -25,6 +25,10 @@ namespace VCX::Labs::Animation {
             b[p0] -= f;
             b[p1] += f;
         }
+        for (int i = 0; i < x.size(); i++) {
+            if (system.Fixed[i])
+                b[i] = system.Mass * (x[i] - y[i]) / (h * h);
+        }
     }
     void partial2_g(MassSpringSystem & system, std::vector<glm::vec3> & x, std::vector<glm::vec3> & y, std::vector<TRP> & A, float h) {
         A.clear();
@@ -35,8 +39,9 @@ namespace VCX::Labs::Animation {
             diag.push_back(Mi);
         }
         for (auto const spring : system.Springs) {
-            auto const      p0   = spring.AdjIdx.first;
-            auto const      p1   = spring.AdjIdx.second;
+            auto const p0 = spring.AdjIdx.first;
+            auto const p1 = spring.AdjIdx.second;
+            if (system.Fixed[p0] || system.Fixed[p1]) continue;
             glm::vec3 const x01  = x[p1] - x[p0];
             glm::vec3 const x01_ = system.Positions[p1] - system.Positions[p0];
             float           d01 = glm::length(x01), d01_ = glm::length(x01_);
@@ -162,7 +167,7 @@ namespace VCX::Labs::Animation {
 
     void AdvanceMassSpringSystem(MassSpringSystem & system, float const dt) {
         // your code here: rewrite following code
-        int const   steps = 1000;
+        int const   steps = 1;
         float const ddt   = dt / steps;
         for (std::size_t s = 0; s < steps; s++) {
             auto                       y(system.Positions);
@@ -171,20 +176,34 @@ namespace VCX::Labs::Animation {
             std::vector<glm::vec3>     b(system.Positions);
             for (std::size_t i = 0; i < system.Positions.size(); i++) {
                 y[i] = system.Positions[i] + ddt * system.Velocities[i] + ddt * ddt * glm::vec3(0, -system.Gravity, 0);
+                if (system.Fixed[i]) y[i] = system.Positions[i];
             }
-            partial_g(system, system.Positions, y, b, ddt);
-            partial2_g(system, system.Positions, y, A, ddt);
-            M.setFromTriplets(A.begin(), A.end());
-            VECXF b_v(3 * system.Positions.size());
+            auto x_iter = system.Positions;
             for (int i = 0; i < system.Positions.size(); i++) {
-                for (int j = 0; j < 3; j++) b_v[i * 3 + j] = b[i][j];
+                for (int j = 0; j < 3; j++) x_iter[i][j] = x_iter[i][j] + glm::gaussRand(0.0, 0.1);
             }
-            LLT   solver(M);
-            VECXF x_v = solver.solve(b_v);
+            int   num_iter = 20;
+            VECXF x_v;
+            for (int cnt = 0; cnt < num_iter; cnt++) {
+                partial_g(system, x_iter, y, b, ddt);
+                partial2_g(system, x_iter, y, A, ddt);
+                M.setFromTriplets(A.begin(), A.end());
+                VECXF b_v(3 * system.Positions.size());
+                for (int i = 0; i < system.Positions.size(); i++) {
+                    for (int j = 0; j < 3; j++) b_v[i * 3 + j] = b[i][j];
+                }
+                LLT solver(M);
+                x_v = solver.solve(b_v);
+                for (int i = 0; i < system.Positions.size(); i++) {
+                    for (int j = 0; j < 3; j++) {
+                        x_iter[i][j] = x_iter[i][j] - x_v[i * 3 + j];
+                    }
+                }
+            }
             for (int i = 0; i < system.Positions.size(); i++) {
                 for (int j = 0; j < 3; j++) {
-                    system.Velocities[i][j] = -x_v[i * 3 + j] / ddt;
-                    system.Positions[i][j]  = system.Positions[i][j] - x_v[i * 3 + j];
+                    system.Velocities[i][j] = (x_iter[i][j] - system.Positions[i][j]) / ddt;
+                    system.Positions[i][j]  = x_iter[i][j];
                 }
             }
         }
