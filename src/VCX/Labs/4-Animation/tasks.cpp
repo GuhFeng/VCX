@@ -98,7 +98,8 @@ namespace VCX::Labs::Animation {
     void InverseKinematicsCCD(IKSystem & ik, const glm::vec3 & EndPosition, int maxCCDIKIteration, float eps) {
         ForwardKinematics(ik, 0);
         // These functions will be useful: glm::normalize, glm::rotation, glm::quat * glm::quat
-        for (int CCDIKIteration = 0; CCDIKIteration < maxCCDIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; CCDIKIteration++) {
+        int CCDIKIteration;
+        for (CCDIKIteration = 0; CCDIKIteration < maxCCDIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; CCDIKIteration++) {
             // your code here: ccd ik
             for (int i = ik.JointLocalOffset.size() - 1; i > 0; i--) {
                 glm::vec3 d1             = glm::normalize(EndPosition - ik.JointGlobalPosition[i - 1]);
@@ -108,13 +109,15 @@ namespace VCX::Labs::Animation {
                 ForwardKinematics(ik, i - 1);
             }
         }
+        // printf("CCD iter:%d\n", CCDIKIteration);
     }
 
     void InverseKinematicsFABR(IKSystem & ik, const glm::vec3 & EndPosition, int maxFABRIKIteration, float eps) {
         ForwardKinematics(ik, 0);
         int                    nJoints = ik.NumJoints();
         std::vector<glm::vec3> backward_positions(nJoints, glm::vec3(0, 0, 0)), forward_positions(nJoints, glm::vec3(0, 0, 0));
-        for (int IKIteration = 0; IKIteration < maxFABRIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; IKIteration++) {
+        int                    IKIteration = 0;
+        for (IKIteration = 0; IKIteration < maxFABRIKIteration && glm::l2Norm(ik.EndEffectorPosition() - EndPosition) > eps; IKIteration++) {
             // task: fabr ik
             // backward update
             glm::vec3 next_position         = EndPosition;
@@ -137,8 +140,8 @@ namespace VCX::Labs::Animation {
             }
             ik.JointGlobalPosition = forward_positions; // copy forward positions to joint_positions
         }
-
-        // Compute joint rotation by position here.
+        // printf("FABR iter:%d\n", IKIteration);
+        //  Compute joint rotation by position here.
         for (int i = 0; i < nJoints - 1; i++) {
             ik.JointGlobalRotation[i] = glm::rotation(glm::normalize(ik.JointLocalOffset[i + 1]), glm::normalize(ik.JointGlobalPosition[i + 1] - ik.JointGlobalPosition[i]));
         }
