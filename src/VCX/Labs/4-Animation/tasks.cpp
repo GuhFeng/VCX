@@ -90,7 +90,7 @@ namespace VCX::Labs::Animation {
         }
         for (int i = StartIndex; i < ik.JointLocalOffset.size(); i++) {
             // your code here: forward kinematics
-            ik.JointGlobalPosition[i] = ik.JointGlobalPosition[i - 1] + glm::mat3_cast(ik.JointLocalRotation[i]) * ik.JointLocalOffset[i];
+            ik.JointGlobalPosition[i] = ik.JointLocalOffset[i] + ik.JointGlobalPosition[i - 1];
             ik.JointGlobalRotation[i] = ik.JointLocalRotation[i] * ik.JointGlobalRotation[i - 1];
         }
     }
@@ -103,7 +103,9 @@ namespace VCX::Labs::Animation {
             for (int i = ik.JointLocalOffset.size() - 1; i > 0; i--) {
                 glm::vec3 d1             = glm::normalize(EndPosition - ik.JointGlobalPosition[i - 1]);
                 glm::vec3 d2             = glm::normalize(ik.JointGlobalPosition[ik.JointLocalOffset.size() - 1] - ik.JointGlobalPosition[i - 1]);
-                ik.JointLocalRotation[i] = glm::rotation(d2, d1) * ik.JointLocalRotation[i];
+                glm::quat r              = glm::rotation(d2, d1);
+                ik.JointLocalRotation[i] = r * ik.JointLocalRotation[i];
+                ik.JointLocalOffset[i]   = r * ik.JointLocalOffset[i];
                 ForwardKinematics(ik, i - 1);
             }
         }
@@ -131,9 +133,10 @@ namespace VCX::Labs::Animation {
             forward_positions[0]   = ik.JointGlobalPosition[0];
             for (int i = 0; i < nJoints - 1; i++) {
                 // your code here
-                glm::vec3 forward_dir    = glm::normalize(backward_positions[i + 1] - now_position);
-                forward_positions[i + 1] = forward_positions[i] + forward_dir * ik.JointOffsetLength[i + 1];
-                now_position             = forward_positions[i + 1];
+                glm::vec3 forward_dir      = glm::normalize(backward_positions[i + 1] - now_position);
+                forward_positions[i + 1]   = forward_positions[i] + forward_dir * ik.JointOffsetLength[i + 1];
+                now_position               = forward_positions[i + 1];
+                ik.JointLocalOffset[i + 1] = forward_positions[i + 1] - forward_positions[i];
             }
             ik.JointGlobalPosition = forward_positions; // copy forward positions to joint_positions
         }
@@ -151,15 +154,15 @@ namespace VCX::Labs::Animation {
 
     IKSystem::Vec3ArrPtr IKSystem::BuildCustomTargetPosition() {
         // get function from https://www.wolframalpha.com/input/?i=Albert+Einstein+curve
-        int nums      = 5000;
+        int nums      = 500;
         using Vec3Arr = std::vector<glm::vec3>;
         std::shared_ptr<Vec3Arr> custom(new Vec3Arr(nums));
         int                      index = 0;
         for (int i = 0; i < nums; i++) {
-            float x_val = 1.5e-3f * custom_x(92 * glm::pi<float>() * i / nums);
-            float y_val = 1.5e-3f * custom_y(92 * glm::pi<float>() * i / nums);
+            float x_val = 1.0 * i / nums;
+            float y_val = sin(2 * 3.14 * x_val);
             if (std::abs(x_val) < 1e-3 || std::abs(y_val) < 1e-3) continue;
-            (*custom)[index++] = glm::vec3(1.6f - x_val, 0.0f, y_val - 0.2f);
+            (*custom)[index++] = glm::vec3(x_val, 0.0f, y_val);
         }
         custom->resize(index);
         return custom;
