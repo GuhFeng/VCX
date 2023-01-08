@@ -10,7 +10,7 @@
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
 
-#include "Engine/App.h"
+#include "Engine/app.h"
 
 static GLFWwindow *                      g_glfwWindow;
 static std::function<void()>             g_glfwWindowRefreshCallback;
