@@ -451,4 +451,62 @@ namespace VCX::Labs::GeometryProcessing {
             }
         }
     }
+    /******************* 6. Show Obj *****************/
+    void ShowObj(
+        Engine::SurfaceMesh const & input,
+        Engine::SurfaceMesh &       output,
+        std::uint32_t               numIterations) {
+        output = input;
+        for (int cnt = 0; cnt < numIterations; cnt++) {
+            Engine::SurfaceMesh & Old   = *(new Engine::SurfaceMesh(output));
+            Engine::SurfaceMesh & New   = *(new Engine::SurfaceMesh);
+            DCEL &                links = *(new DCEL);
+            links.AddFaces(Old.Indices);
+            if (! links.IsValid()) printf("Invalid Mesh\n");
+            for (std::size_t i = 0; i < Old.Positions.size(); ++i) {
+                DCEL::Vertex               v             = links.GetVertex(i);
+                std::vector<std::uint32_t> neighbor_list = v.GetNeighbors();
+                glm::vec3                  pos(0.0);
+                for (std::uint32_t indx : neighbor_list) { pos = pos + Old.Positions[indx]; }
+                pos = pos * (glm::vec3(0.375 / neighbor_list.size()));
+                pos = pos + Old.Positions[i] * (glm::vec3(0.625));
+                New.Positions.push_back(pos);
+            }
+            std::map<uint64_t, uint32_t> map_record;
+            for (DCEL::HalfEdge const * e : links.GetEdges()) {
+                std::uint32_t v0 = e->OppositeVertex();
+                std::uint32_t v1 = e->PairOppositeVertex();
+                std::uint32_t v2 = e->From();
+                std::uint32_t v3 = e->To();
+                glm::vec3     pos(0);
+                pos = pos + (Old.Positions[v0] + Old.Positions[v1]) * (glm::vec3(0.125));
+                pos = pos + (Old.Positions[v2] + Old.Positions[v3]) * (glm::vec3(0.375));
+                New.Positions.push_back(pos);
+                map_record[MAP_PAIR(v2, v3)] = New.Positions.size() - 1;
+            }
+            for (int i = 0; i < Old.Indices.size(); i = i + 3) {
+                const std::uint32_t * f  = Old.Indices.data() + i;
+                uint32_t              v1 = f[0], v2 = f[1], v3 = f[2];
+                uint32_t              v4 = map_record[MAP_PAIR(v2, v1)];
+                uint32_t              v5 = map_record[MAP_PAIR(v1, v3)];
+                uint32_t              v6 = map_record[MAP_PAIR(v2, v3)];
+                New.Indices.push_back(v1);
+                New.Indices.push_back(v4);
+                New.Indices.push_back(v5);
+                New.Indices.push_back(v4);
+                New.Indices.push_back(v2);
+                New.Indices.push_back(v6);
+                New.Indices.push_back(v3);
+                New.Indices.push_back(v5);
+                New.Indices.push_back(v6);
+                New.Indices.push_back(v6);
+                New.Indices.push_back(v5);
+                New.Indices.push_back(v4);
+            }
+            output = New;
+            delete &Old;
+            delete &New;
+            delete &links;
+        }
+    }
 } // namespace VCX::Labs::GeometryProcessing

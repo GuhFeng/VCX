@@ -2,11 +2,11 @@
 #include <algorithm>
 #include <array>
 
-#include "Labs/2-GeometryProcessing/CaseSubdivision.h"
+#include "Labs/2-GeometryProcessing/CaseShowObj.h"
 #include "Labs/2-GeometryProcessing/tasks.h"
 
 namespace VCX::Labs::GeometryProcessing {
-    CaseSubdivision::CaseSubdivision(
+    CaseShowObj::CaseShowObj(
         Viewer & viewer, std::initializer_list<Assets::ExampleModel> && models):
         _models(models),
         _viewer(viewer) {
@@ -18,7 +18,7 @@ namespace VCX::Labs::GeometryProcessing {
             glm::sin(glm::radians(_options.LightDirScalar)));
     }
 
-    void CaseSubdivision::OnSetupPropsUI() {
+    void CaseShowObj::OnSetupPropsUI() {
         if (ImGui::BeginCombo("Model", GetModelName(_modelIdx))) {
             for (std::size_t i = 0; i < _models.size(); ++i) {
                 bool selected = i == _modelIdx;
@@ -48,12 +48,12 @@ namespace VCX::Labs::GeometryProcessing {
     }
 
     Common::CaseRenderResult
-        CaseSubdivision::OnRender(std::pair<std::uint32_t, std::uint32_t> const desiredSize) {
+        CaseShowObj::OnRender(std::pair<std::uint32_t, std::uint32_t> const desiredSize) {
         if (_recompute) {
             _recompute = false;
             _task.Emplace([&]() {
                 Engine::SurfaceMesh emptyMesh;
-                SubdivisionMesh(GetModelMesh(_modelIdx), emptyMesh, _numIterations);
+                ShowObj(GetModelMesh(_modelIdx), emptyMesh, _numIterations);
                 return emptyMesh;
             });
             _running = true;
@@ -65,7 +65,7 @@ namespace VCX::Labs::GeometryProcessing {
         return _viewer.Render(_options, _modelObject, _camera, _cameraManager, desiredSize);
     }
 
-    void CaseSubdivision::OnProcessInput(ImVec2 const & pos) {
+    void CaseShowObj::OnProcessInput(ImVec2 const & pos) {
         _cameraManager.ProcessInput(_camera, pos);
     }
 } // namespace VCX::Labs::GeometryProcessing
