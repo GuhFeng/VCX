@@ -51,7 +51,7 @@ namespace VCX::Labs::GeometryProcessing {
             _recompute = false;
             _task.Emplace([&]() {
                 Engine::SurfaceMesh emptyMesh;
-                ShowObj(_path);
+                ShowObj(GetModelMesh(_modelIdx), emptyMesh, _path);
                 return emptyMesh;
             });
             _running = true;

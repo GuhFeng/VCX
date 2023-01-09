@@ -452,5 +452,8 @@ namespace VCX::Labs::GeometryProcessing {
         }
     }
     /******************* 6. Show Obj *****************/
-    void ShowObj(const char * path) { solve(path); }
+    void ShowObj(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, const char * path) {
+        solve(mesh, path);
+        mesh = old;
+    }
 } // namespace VCX::Labs::GeometryProcessing

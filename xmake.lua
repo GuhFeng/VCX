@@ -62,8 +62,10 @@ target("lab-common")
 
 target("point-cloud")
     set_kind("static")
+    add_deps("lab-common")
     add_packages("open3d", { public = true })
     add_headerfiles("src/VCX/Labs/Ponit-Cloud/*.h")
+    add_headerfiles("src/VCX/Engine/*.h")
     add_files("src/VCX/Labs/Ponit-Cloud/*.cpp")
 
 target("lab2")
