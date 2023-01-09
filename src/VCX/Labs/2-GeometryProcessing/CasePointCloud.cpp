@@ -2,7 +2,7 @@
 #include <algorithm>
 #include <array>
 
-#include "Labs/2-GeometryProcessing/CaseShowObj.h"
+#include "Labs/2-GeometryProcessing/CasePointCloud.h"
 #include "Labs/2-GeometryProcessing/tasks.h"
 #include "Labs/Common/ImGuiHelper.h"
 

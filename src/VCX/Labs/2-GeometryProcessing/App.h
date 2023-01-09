@@ -7,7 +7,7 @@
 #include "Engine/SurfaceMesh.h"
 #include "Labs/2-GeometryProcessing/CaseMarchingCubes.h"
 #include "Labs/2-GeometryProcessing/CaseParameterization.h"
-#include "Labs/2-GeometryProcessing/CaseShowObj.h"
+#include "Labs/2-GeometryProcessing/CasePointCloud.h"
 #include "Labs/2-GeometryProcessing/CaseSimplification.h"
 #include "Labs/2-GeometryProcessing/CaseSmoothing.h"
 #include "Labs/2-GeometryProcessing/CaseSubdivision.h"
