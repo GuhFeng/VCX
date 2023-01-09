@@ -1,6 +1,4 @@
 # Written by Pransu Dash, Ryan Leung, and Ivy Nguyen
-
-import numpy as np
 import open3d as o3d
 from bpa import BPA
 from bpa import Triangle
@@ -8,7 +6,7 @@ from bpa import Triangle
 if __name__ == "__main__":
 
     print("Load a ply point cloud, print it, and render it")
-    pcd = o3d.io.read_point_cloud("madara.ply")
+    pcd = o3d.io.read_point_cloud("bunny_small.xyz")
     pcd.estimate_normals(fast_normal_computation=False)
 
     pcd.normalize_normals()
@@ -16,7 +14,7 @@ if __name__ == "__main__":
     b = BPA(pcd)
     print('making mesh')
     triangles = b.make_mesh()
-    f = open("madara_r_4_3.ply", "w")
+    f = open("bunny_mesh.ply", "w")
 
     vertices = []
     v2index = {}

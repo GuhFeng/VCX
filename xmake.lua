@@ -13,6 +13,7 @@ add_requires("spdlog")
 add_requires("stb")
 add_requires("fmt")
 add_requires("tinyobjloader")
+add_requires("open3d")
 
 target("assets")
     set_kind("phony")
