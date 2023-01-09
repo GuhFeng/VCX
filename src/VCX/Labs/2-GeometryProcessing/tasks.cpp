@@ -452,10 +452,5 @@ namespace VCX::Labs::GeometryProcessing {
         }
     }
     /******************* 6. Show Obj *****************/
-    void ShowObj(
-        Engine::SurfaceMesh const & input,
-        Engine::SurfaceMesh &       output,
-        std::uint32_t               numIterations) {
-        output = input;
-    }
+    void ShowObj(const char * path) { printf("%s\n", path); }
 } // namespace VCX::Labs::GeometryProcessing

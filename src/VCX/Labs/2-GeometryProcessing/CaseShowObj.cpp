@@ -4,6 +4,7 @@
 
 #include "Labs/2-GeometryProcessing/CaseShowObj.h"
 #include "Labs/2-GeometryProcessing/tasks.h"
+#include "Labs/Common/ImGuiHelper.h"
 
 namespace VCX::Labs::GeometryProcessing {
     CaseShowObj::CaseShowObj(
@@ -33,16 +34,13 @@ namespace VCX::Labs::GeometryProcessing {
         }
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
-
-        if (ImGui::CollapsingHeader("Algorithm", ImGuiTreeNodeFlags_DefaultOpen)) {
-            _recompute |= ImGui::SliderInt("Iterations", &_numIterations, 0, 3);
-            if (_running) {
-                static const std::string t = "Running.....";
-                ImGui::Text(
-                    t.substr(0, 7 + (static_cast<int>(ImGui::GetTime() / 0.1f) % 6)).c_str());
-            } else ImGui::NewLine();
-        }
+        static char pc_path[128] = "test";
+        bool        enableWrite  = ImGui::Button("Load Point Cloud");
+        ImGui::SameLine();
+        ImGui::InputText("", pc_path, IM_ARRAYSIZE(pc_path));
+        _path = pc_path;
         ImGui::Spacing();
+        if (enableWrite) { _recompute |= enableWrite; }
 
         Viewer::SetupRenderOptionsUI(_options, _cameraManager);
     }
@@ -53,7 +51,7 @@ namespace VCX::Labs::GeometryProcessing {
             _recompute = false;
             _task.Emplace([&]() {
                 Engine::SurfaceMesh emptyMesh;
-                ShowObj(GetModelMesh(_modelIdx), emptyMesh, _numIterations);
+                ShowObj(_path);
                 return emptyMesh;
             });
             _running = true;

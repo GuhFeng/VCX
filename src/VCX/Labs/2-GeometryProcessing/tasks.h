@@ -29,8 +29,5 @@ namespace VCX::Labs::GeometryProcessing {
         const glm::vec3 &                               grid_min,
         const float                                     dx,
         const int                                       n);
-    void ShowObj(
-        Engine::SurfaceMesh const & input,
-        Engine::SurfaceMesh &       output,
-        std::uint32_t               numIterations);
+    void ShowObj(const char * path);
 }

@@ -30,6 +30,7 @@ namespace VCX::Labs::GeometryProcessing {
         ModelObject                        _modelObject;
         RenderOptions                      _options;
         int                                _numIterations { 0 };
+        char *                             _path { 0 };
 
         char const * GetModelName(std::size_t const i) const {
             return Viewer::ExampleModelNames[std::size_t(_models[i])].c_str();
