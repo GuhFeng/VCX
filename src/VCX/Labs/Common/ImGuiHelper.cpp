@@ -43,7 +43,7 @@ namespace VCX::Labs::Common::ImGuiHelper {
         Engine::GL::UniqueTexture2D const &     tex,
         std::pair<std::uint32_t, std::uint32_t> texSize,
         bool const                              flipped) {
-        static char path[128]   = "../../../../Lab2_Report/img/a.png";
+        static char path[128]   = "img/a.png";
         bool        enableWrite = ImGui::Button("Save PNG Image");
         static bool saving      = true;
         ImGui::SameLine();

@@ -35,10 +35,9 @@ namespace VCX::Labs::GeometryProcessing {
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
         static char pc_path[128] = "test";
-        bool        b_pc         = ImGui::Button("Load Point Cloud");
-        ImGui::SameLine();
-        ImGui::InputText("", pc_path, IM_ARRAYSIZE(pc_path));
-        _path = pc_path;
+        ImGui::InputTextWithHint("", "", pc_path, IM_ARRAYSIZE(pc_path));
+        bool b_pc = ImGui::Button("Load Point Cloud File");
+        _path     = pc_path;
         ImGui::Spacing();
         if (b_pc) { _recompute |= b_pc; }
 
