@@ -24,12 +24,15 @@ namespace VCX::Labs::GeometryProcessing {
         _caseSmoothing(_viewer, { ExampleModel::Block, ExampleModel::Dinosaur }),
         _caseMarchingCubes(_viewer), _caseShowObj(
                                          _viewer,
-                                         { ExampleModel::Cube,
-                                           ExampleModel::Block,
-                                           ExampleModel::Dinosaur,
-                                           ExampleModel::Fandisk,
-                                           ExampleModel::Rocker,
-                                           ExampleModel::Arma }),
+                                         {
+                                             ExampleModel::Cube,
+                                             ExampleModel::Block,
+                                             ExampleModel::Dinosaur,
+                                             ExampleModel::Fandisk,
+                                             ExampleModel::Rocker,
+                                             ExampleModel::Arma,
+                                             ExampleModel::Point_Cloud,
+                                         }),
         _ui(Labs::Common::UIOptions {}) {}
 
     void App::OnFrame() { _ui.Setup(_cases, _caseId); }
