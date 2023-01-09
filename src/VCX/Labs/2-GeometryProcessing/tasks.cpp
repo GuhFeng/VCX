@@ -5,11 +5,11 @@
 #include <set>
 #include <unordered_set>
 
-#include <glm/gtc/matrix_inverse.hpp>
-#include <spdlog/spdlog.h>
-
 #include "Labs/2-GeometryProcessing/DCEL.hpp"
 #include "Labs/2-GeometryProcessing/tasks.h"
+#include "Labs/Ponit-Cloud/pointcloud.h"
+#include <glm/gtc/matrix_inverse.hpp>
+#include <spdlog/spdlog.h>
 
 namespace VCX::Labs::GeometryProcessing {
 
@@ -452,5 +452,5 @@ namespace VCX::Labs::GeometryProcessing {
         }
     }
     /******************* 6. Show Obj *****************/
-    void ShowObj(const char * path) { printf("%s\n", path); }
+    void ShowObj(const char * path) { solve(path); }
 } // namespace VCX::Labs::GeometryProcessing

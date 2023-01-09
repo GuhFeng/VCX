@@ -35,12 +35,12 @@ namespace VCX::Labs::GeometryProcessing {
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
         static char pc_path[128] = "test";
-        bool        enableWrite  = ImGui::Button("Load Point Cloud");
+        bool        b_pc         = ImGui::Button("Load Point Cloud");
         ImGui::SameLine();
         ImGui::InputText("", pc_path, IM_ARRAYSIZE(pc_path));
         _path = pc_path;
         ImGui::Spacing();
-        if (enableWrite) { _recompute |= enableWrite; }
+        if (b_pc) { _recompute |= b_pc; }
 
         Viewer::SetupRenderOptionsUI(_options, _cameraManager);
     }
