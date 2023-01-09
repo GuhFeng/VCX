@@ -452,7 +452,8 @@ namespace VCX::Labs::GeometryProcessing {
         }
     }
     /******************* 6. Show Obj *****************/
-    void ShowObj(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, const char * path) {
+    void
+        PointCloud(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, const char * path) {
         solve(mesh, path);
         mesh = old;
     }

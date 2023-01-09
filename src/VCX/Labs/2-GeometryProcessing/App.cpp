@@ -22,7 +22,7 @@ namespace VCX::Labs::GeometryProcessing {
                                               ExampleModel::Rocker,
                                               ExampleModel::Arma }),
         _caseSmoothing(_viewer, { ExampleModel::Block, ExampleModel::Dinosaur }),
-        _caseMarchingCubes(_viewer), _caseShowObj(
+        _caseMarchingCubes(_viewer), _casePointCloud(
                                          _viewer,
                                          {
                                              ExampleModel::Point_Cloud,

@@ -6,11 +6,11 @@
 
 namespace VCX::Labs::GeometryProcessing {
 
-    class CaseShowObj : public Common::ICase {
+    class CasePointCloud : public Common::ICase {
     public:
-        CaseShowObj(Viewer & viewer, std::initializer_list<Assets::ExampleModel> && models);
+        CasePointCloud(Viewer & viewer, std::initializer_list<Assets::ExampleModel> && models);
 
-        virtual std::string_view const GetName() override { return "Mesh ShowObj"; }
+        virtual std::string_view const GetName() override { return "PointCloud"; }
 
         virtual void OnSetupPropsUI() override;
         virtual Common::CaseRenderResult

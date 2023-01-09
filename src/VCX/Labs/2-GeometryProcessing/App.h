@@ -23,13 +23,13 @@ namespace VCX::Labs::GeometryProcessing {
         CaseSimplification   _caseSimplification;
         CaseSmoothing        _caseSmoothing;
         CaseMarchingCubes    _caseMarchingCubes;
-        CaseShowObj          _caseShowObj;
+        CasePointCloud       _casePointCloud;
 
         std::size_t _caseId = 0;
 
         std::vector<std::reference_wrapper<Common::ICase>> _cases = {
             _caseSubdivision, _caseParameterization, _caseSimplification,
-            _caseSmoothing,   _caseMarchingCubes,    _caseShowObj,
+            _caseSmoothing,   _caseMarchingCubes,    _casePointCloud,
         };
 
     public:

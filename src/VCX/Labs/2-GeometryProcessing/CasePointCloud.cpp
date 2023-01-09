@@ -7,7 +7,7 @@
 #include "Labs/Common/ImGuiHelper.h"
 
 namespace VCX::Labs::GeometryProcessing {
-    CaseShowObj::CaseShowObj(
+    CasePointCloud::CasePointCloud(
         Viewer & viewer, std::initializer_list<Assets::ExampleModel> && models):
         _models(models),
         _viewer(viewer) {
@@ -19,7 +19,7 @@ namespace VCX::Labs::GeometryProcessing {
             glm::sin(glm::radians(_options.LightDirScalar)));
     }
 
-    void CaseShowObj::OnSetupPropsUI() {
+    void CasePointCloud::OnSetupPropsUI() {
         if (ImGui::BeginCombo("Model", GetModelName(_modelIdx))) {
             for (std::size_t i = 0; i < _models.size(); ++i) {
                 bool selected = i == _modelIdx;
@@ -46,12 +46,12 @@ namespace VCX::Labs::GeometryProcessing {
     }
 
     Common::CaseRenderResult
-        CaseShowObj::OnRender(std::pair<std::uint32_t, std::uint32_t> const desiredSize) {
+        CasePointCloud::OnRender(std::pair<std::uint32_t, std::uint32_t> const desiredSize) {
         if (_recompute) {
             _recompute = false;
             _task.Emplace([&]() {
                 Engine::SurfaceMesh emptyMesh;
-                ShowObj(GetModelMesh(_modelIdx), emptyMesh, _path);
+                PointCloud(GetModelMesh(_modelIdx), emptyMesh, _path);
                 return emptyMesh;
             });
             _running = true;
@@ -63,7 +63,7 @@ namespace VCX::Labs::GeometryProcessing {
         return _viewer.Render(_options, _modelObject, _camera, _cameraManager, desiredSize);
     }
 
-    void CaseShowObj::OnProcessInput(ImVec2 const & pos) {
+    void CasePointCloud::OnProcessInput(ImVec2 const & pos) {
         _cameraManager.ProcessInput(_camera, pos);
     }
 } // namespace VCX::Labs::GeometryProcessing
