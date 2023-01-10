@@ -34,7 +34,7 @@ namespace VCX::Labs::GeometryProcessing {
         }
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
-        static char pc_path[128] = "assets/point_cloud/bunny.pcd";
+        static char pc_path[128] = "assets/point_cloud/bun000.ply";
         ImGui::InputTextWithHint("", "", pc_path, IM_ARRAYSIZE(pc_path));
         bool b_pc = ImGui::Button("Load Point Cloud File");
         _path     = pc_path;

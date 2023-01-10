@@ -6,7 +6,7 @@
 #include <iostream>
 #include <list>
 #include <map>
-#include <Open3D/Open3D.h>
+#include <open3d/Open3D.h>
 #include <set>
 #include <spdlog/spdlog.h>
 #include <tuple>
@@ -15,18 +15,19 @@
 void solve(VCX::Engine::SurfaceMesh & mesh, const char * p) {
     open3d::geometry::PointCloud     pc;
     open3d::io::ReadPointCloudOption po;
-    open3d::io::ReadPointCloudFromPCD(p, pc, po);
+    open3d::io::ReadPointCloudFromPLY(p, pc, po);
     if (pc.HasNormals()) printf("Has normal!\n");
     else pc.EstimateNormals(open3d::geometry::KDTreeSearchParamKNN(), false);
     printf("num points: %zu\n", pc.points_.size());
     auto   distances = pc.ComputeNearestNeighborDistance();
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
-    double                                          rho = 1.5 * avg_distance;
-    std::vector<double>                             radii { 0.005, 0.01, 0.02, 0.04, 0.08, 0.16 };
+    double              rho = 1.25 * avg_distance / 2.0;
+    std::vector<double> radii { 0.005 * rho, 0.1 * rho, 0.2 * rho, 0.4 * rho,
+                                0.8 * rho,   2.0 * rho, 10.0 * rho };
     std::shared_ptr<open3d::geometry::TriangleMesh> m(new open3d::geometry::TriangleMesh());
-    // m = m->CreateFromPointCloudBallPivoting(pc, radii);
-    m = m->CreateFromPointCloudAlphaShape(pc, 0.005);
+    m = m->CreateFromPointCloudBallPivoting(pc, radii);
+
     for (auto tri : m->triangles_) {
         mesh.Indices.push_back(tri.x());
         mesh.Indices.push_back(tri.y());
