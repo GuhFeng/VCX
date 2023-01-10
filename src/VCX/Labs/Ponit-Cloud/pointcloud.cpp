@@ -15,7 +15,8 @@ void solve(VCX::Engine::SurfaceMesh & mesh, const char * p) {
     open3d::geometry::PointCloud     pc;
     open3d::io::ReadPointCloudOption po;
     open3d::io::ReadPointCloudFromPCD(p, pc, po);
-    pc.EstimateNormals();
-    if (pc.HasNormals()) printf("Has normal!");
-    printf("%ld\n", pc.points_.size());
+    pc.EstimateNormals(open3d::geometry::KDTreeSearchParamKNN(), false);
+    if (pc.HasNormals()) printf("Has normal!\n");
+    printf("num points: %ld\n", pc.points_.size());
+    int num_points = pc.points_.size();
 }
