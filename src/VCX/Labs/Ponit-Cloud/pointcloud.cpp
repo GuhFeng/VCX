@@ -12,6 +12,10 @@
 #include <unordered_set>
 
 void solve(VCX::Engine::SurfaceMesh & mesh, const char * p) {
-    open3d::geometry::PointCloud();
-    printf("%s\n", p);
+    open3d::geometry::PointCloud     pc;
+    open3d::io::ReadPointCloudOption po;
+    if (! open3d::io::ReadPointCloudFromPCD(p, pc, po)) {
+        printf("File not exist!%s\n", p);
+        return;
+    }
 }
