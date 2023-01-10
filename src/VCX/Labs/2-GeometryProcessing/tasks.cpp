@@ -455,6 +455,7 @@ namespace VCX::Labs::GeometryProcessing {
     void
         PointCloud(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, const char * path) {
         solve(mesh, path);
-        mesh = old;
+        // mesh = old;
+        mesh.NormalizePositions();
     }
 } // namespace VCX::Labs::GeometryProcessing
