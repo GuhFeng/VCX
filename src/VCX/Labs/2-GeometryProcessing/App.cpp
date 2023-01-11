@@ -25,6 +25,8 @@ namespace VCX::Labs::GeometryProcessing {
         _caseMarchingCubes(_viewer), _casePointCloud(
                                          _viewer,
                                          {
+                                             ExampleModel::Cube,
+                                             ExampleModel::Face,
                                              ExampleModel::Sphere,
                                              ExampleModel::Block,
                                              ExampleModel::Dinosaur,
@@ -32,6 +34,7 @@ namespace VCX::Labs::GeometryProcessing {
                                              ExampleModel::Rocker,
                                              ExampleModel::Arma,
                                              ExampleModel::Bunny,
+                                             ExampleModel::Tyra,
                                          }),
         _ui(Labs::Common::UIOptions {}) {}
 

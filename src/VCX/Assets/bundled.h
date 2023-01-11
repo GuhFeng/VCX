@@ -23,6 +23,7 @@ namespace VCX::Assets {
         "assets/models/rocker.obj",
         "assets/models/sphere.obj",
         "assets/models/bunny.obj",
+        "assets/models/tyra.obj",
     }) };
 
     enum class ExampleModel {
@@ -35,5 +36,6 @@ namespace VCX::Assets {
         Rocker,
         Sphere,
         Bunny,
+        Tyra,
     };
 }
