@@ -27,15 +27,19 @@ void LoadData(open3d::geometry::PointCloud & pc, const std::string path) {
     open3d::io::ReadPointCloudFromPCD(path, pc, po);
 }
 
-void LibBPA(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {
-    auto   distances = pc.ComputeNearestNeighborDistance();
-    double avg_distance =
-        std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
-    double              rho = 1.25 * avg_distance / 2.0;
-    std::vector<double> radii { 0.05 * rho, 0.1 * rho, 0.2 * rho, 0.5 * rho,
-                                rho,        2.0 * rho, 4.0 * rho, 8 * rho };
+void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int type = 0) {
     std::shared_ptr<open3d::geometry::TriangleMesh> m(new open3d::geometry::TriangleMesh());
-    m = m->CreateFromPointCloudBallPivoting(pc, radii);
+    if (type == 0) {
+        auto   distances = pc.ComputeNearestNeighborDistance();
+        double avg_distance =
+            std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
+        double              rho = 1.25 * avg_distance / 2.0;
+        std::vector<double> radii { 0.05 * rho, 0.1 * rho, 0.2 * rho, 0.5 * rho,
+                                    rho,        2.0 * rho, 4.0 * rho, 8 * rho };
+        m = m->CreateFromPointCloudBallPivoting(pc, radii);
+    } else {
+        m = std::get<0>(m->CreateFromPointCloudPoisson(pc));
+    }
     for (auto tri : m->triangles_) {
         mesh.Indices.push_back(tri.x());
         mesh.Indices.push_back(tri.y());
@@ -48,9 +52,14 @@ void LibBPA(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) 
     }
 }
 
+glm::vec3       eigen2glm(Eigen::Vector3d a) { return glm::vec3(a.x(), a.y(), a.z()); }
+Eigen::Vector3d glm2eigen(glm::vec3 a) { return Eigen::Vector3d(a[0], a[1], a[2]); }
+
+void BPA(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {}
+
 void solve(
     const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
-    LibBPA(pc, mesh);
+    LibAlg(pc, mesh, 1);
 }

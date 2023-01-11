@@ -25,8 +25,6 @@ namespace VCX::Labs::GeometryProcessing {
         _caseMarchingCubes(_viewer), _casePointCloud(
                                          _viewer,
                                          {
-                                             ExampleModel::Cube,
-                                             ExampleModel::Face,
                                              ExampleModel::Sphere,
                                              ExampleModel::Block,
                                              ExampleModel::Dinosaur,
