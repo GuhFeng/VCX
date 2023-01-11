@@ -12,19 +12,22 @@
 #include <tuple>
 #include <unordered_set>
 
-void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * p) {
-    open3d::geometry::PointCloud pc;
-    // open3d::io::ReadPointCloudOption po;
-    // open3d::io::ReadPointCloudFromPCD(p, pc, po);
-    auto nor = old.ComputeNormals();
-
-    for (int i = 0; i < old.Positions.size(); i++) {
-        auto p = old.Positions[i];
+void Mesh2PC(const VCX::Engine::SurfaceMesh & mesh, open3d::geometry::PointCloud & pc) {
+    auto nor = mesh.ComputeNormals();
+    for (int i = 0; i < mesh.Positions.size(); i++) {
+        auto p = mesh.Positions[i];
         pc.points_.push_back(Eigen::Vector3d(p[0], p[1], p[2]));
         p = nor[i];
         pc.normals_.push_back(Eigen::Vector3d(p[0], p[1], p[2]));
     }
-    printf("num points: %zu\n", pc.points_.size());
+}
+
+void LoadData(open3d::geometry::PointCloud & pc, const std::string path) {
+    open3d::io::ReadPointCloudOption po;
+    open3d::io::ReadPointCloudFromPCD(path, pc, po);
+}
+
+void LibBPA(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {
     auto   distances = pc.ComputeNearestNeighborDistance();
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
@@ -43,4 +46,11 @@ void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh
         mesh.Positions[i] =
             glm::vec3(m->vertices_[i].x(), m->vertices_[i].y(), m->vertices_[i].z());
     }
+}
+
+void solve(
+    const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
+    open3d::geometry::PointCloud pc;
+    Mesh2PC(old, pc);
+    LibBPA(pc, mesh);
 }
