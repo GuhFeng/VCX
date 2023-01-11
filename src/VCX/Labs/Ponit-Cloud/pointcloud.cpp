@@ -20,6 +20,7 @@ struct Grid {
     glm::vec3                          PMIN, PMAX;
     uint32_t                           n[3];
     void                               load(double r, PCD_t & pcd) {
+        if (! lst.empty()) lst.clear();
         this->pc   = &pcd;
         this->r    = r;
         this->PMIN = glm::vec3(1e9);
@@ -50,7 +51,6 @@ struct Grid {
         uint32_t m[3];
         for (int i = 0; i < 3; i++) m[i] = uint32_t((v - PMIN)[i] / r);
         std::vector<uint32_t> lst_n;
-        printf("%d %d %d\n", m[0], m[1], m[2]);
         for (int i = max(0, m[0] - 1); i < min(m[0] + 1, n[0]); i++) {
             for (int j = max(0, m[1] - 1); j < min(m[1] + 1, n[1]); j++) {
                 for (int k = max(0, m[2] - 1); k < min(m[2] + 1, n[2]); k++) {
@@ -65,7 +65,58 @@ struct Grid {
     }
 };
 
-void BPA(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {
+struct Edges {
+    uint32_t v1, v2, v_op;
+    uint32_t tri, onfront;
+    Edges() {
+        tri     = 1;
+        onfront = 1;
+    }
+};
+
+struct Front {
+    std::vector<Edges> edges;
+    std::set<uint32_t> act_edges;
+    std::set<uint32_t> act_vtx;
+};
+
+bool get_center(
+    glm::vec3 v1, glm::vec3 v2, glm::vec3 v3, double r, std::vector<glm::vec3> & center) {
+    glm::vec3 n    = glm::cross(v2 - v1, v3 - v1);
+    n              = glm::normalize(n);
+    glm::vec3 left = glm::cross(
+        glm::vec3(glm::length(v3 - v1) * glm::length(v3 - v1)) * (glm::cross(v2 - v1, v3 - v1)),
+        (v2 - v1));
+    glm::vec3 right = glm::cross(
+        glm::vec3(glm::length(v2 - v1) * glm::length(v2 - v1)) * (glm::cross(v3 - v1, v2 - v1)),
+        (v3 - v1));
+    double denominator =
+        (2.0 * glm::length(glm::cross(v2 - v1, v3 - v1))
+         * glm::length(glm::cross(v2 - v1, v3 - v1)));
+    glm::vec3 v0         = v1 + (left + right) * glm::vec3(1 / denominator);
+    double    min_radius = glm::length(v1 - v0);
+    center.clear();
+    if (r >= min_radius) {
+        double theta = glm::acos(min_radius / r);
+        double t     = glm::sin(theta) * r;
+        center.push_back(v0 + n * glm::vec3(t));
+        center.push_back(v0 - n * glm::vec3(t));
+        return 1;
+    }
+    return 0;
+}
+
+struct BPA {
+    std::set<uint32_t>    used_vtx;
+    Front                 front;
+    std::vector<uint32_t> triangles;
+    std::vector<double>   radii;
+    Grid                  grid;
+    PCD_t &               pc;
+    BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) {}
+};
+
+void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {
     auto   distances = pc.ComputeNearestNeighborDistance();
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
@@ -78,12 +129,5 @@ void solve(
     const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
-    Grid g;
-    g.load(0.05, pc);
-    auto lst = g.Get_Neighbor(glm::vec3(0.5, 0, 0));
-    for (auto i : lst) {
-        printf("%f %f %f\n", pc.points_[i][0], pc.points_[i][1], pc.points_[i][2]);
-    }
-
     LibAlg(pc, mesh, 1);
 }
