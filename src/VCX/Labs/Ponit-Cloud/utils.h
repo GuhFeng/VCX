@@ -11,6 +11,8 @@
 #include <spdlog/spdlog.h>
 #include <tuple>
 #include <unordered_set>
+typedef open3d::geometry::PointCloud PCD_t;
+#define GET_INDX(i, j, k, n) (i * n[1] * n[2] + j * n[2] + k)
 void Mesh2PC(const VCX::Engine::SurfaceMesh & mesh, open3d::geometry::PointCloud & pc);
 
 void LoadData(open3d::geometry::PointCloud & pc, const std::string path);
