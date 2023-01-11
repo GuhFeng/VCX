@@ -22,7 +22,7 @@ namespace VCX::Assets {
         "assets/models/fandisk.obj",
         "assets/models/rocker.obj",
         "assets/models/sphere.obj",
-        "assets/models/point_cloud.obj",
+        "assets/models/bunny.obj",
     }) };
 
     enum class ExampleModel {
@@ -34,6 +34,6 @@ namespace VCX::Assets {
         Fandisk,
         Rocker,
         Sphere,
-        Point_Cloud,
+        Bunny,
     };
 }

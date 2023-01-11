@@ -1,2 +1,3 @@
 #include "Engine/SurfaceMesh.h"
-void solve(VCX::Engine::SurfaceMesh & mesh, const char * path);
+void solve(
+    const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path);
