@@ -182,7 +182,7 @@ class BPA:
             angle = np.arccos(np.dot(unit_vec, pn[1] / np.linalg.norm(pn[1])))
             if angle <= 1.5707963267948966:
                 return True
-            return False
+        return False
 
     def find_seed_triangle(self):
         """
