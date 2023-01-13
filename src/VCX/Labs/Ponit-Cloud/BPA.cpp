@@ -46,8 +46,9 @@ struct Grid {
             this->lst[GET_INDX(m[0], m[1], m[2], this->n)].push_back(j);
         }
     }
-    std::vector<uint32_t> Get_Neighbor(glm::vec3 v) {
+    std::vector<uint32_t> Get_Neighbor(glm::vec3 v, double rad) {
         uint32_t m[3];
+        if (rad > 2 * r) printf("warning: the rad is too large!\n");
         for (int i = 0; i < 3; i++) m[i] = uint32_t((v - PMIN)[i] / r);
         std::vector<uint32_t> lst_n;
         for (int i = max(0, m[0] - 1); i < min(m[0] + 1, n[0]); i++) {
@@ -55,7 +56,12 @@ struct Grid {
                 for (int k = max(0, m[2] - 1); k < min(m[2] + 1, n[2]); k++) {
                     if (this->lst[GET_INDX(i, j, k, this->n)].empty()) continue;
                     for (int cnt = 0; cnt < this->lst[GET_INDX(i, j, k, this->n)].size(); cnt++) {
-                        lst_n.push_back(this->lst[GET_INDX(i, j, k, this->n)][cnt]);
+                        if (glm::length(
+                                v
+                                - eigen2glm(
+                                    pc->points_[this->lst[GET_INDX(i, j, k, this->n)][cnt]]))
+                            <= rad)
+                            lst_n.push_back(this->lst[GET_INDX(i, j, k, this->n)][cnt]);
                     }
                 }
             }
@@ -111,6 +117,7 @@ bool get_center(
         double t     = glm::sin(theta) * r;
         center.push_back(v0 + n * glm::vec3(t));
         center.push_back(v0 - n * glm::vec3(t));
+        center.push_back(n);
         return 1;
     }
     return 0;
@@ -122,8 +129,101 @@ struct BPA {
     std::vector<uint32_t> triangles;
     std::vector<double>   radii;
     double                r_now;
+    uint32_t              indx;
     Grid                  grid;
     PCD_t &               pc;
-    BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) { r_now = r[0]; }
-    void pivot_ball(Edges e) {}
+    BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) {
+        r_now = r[0];
+        indx  = 0;
+        grid.load(r_now, pcd);
+    }
+    bool valid_ball(glm::vec3 c, glm::vec3 dir, glm::vec3 norm) {
+        auto neibors = grid.Get_Neighbor(c, r_now);
+        if (neibors.size() == 3 && glm::dot(dir, norm) >= 0) return 1;
+        return 0;
+    }
+    bool find_seed() {
+        for (int p = 0; p < pc.points_.size(); p++) {
+            glm::vec3 v = eigen2glm(pc.points_[p]), nor = eigen2glm(pc.normals_[p]);
+            if (used_vtx.count(p)) continue;
+            auto neibors = grid.Get_Neighbor(v, 2.0 * r_now);
+            for (int i = 0; i < neibors.size(); i++) {
+                for (int j = i + 1; j < neibors.size(); j++) {
+                    glm::vec3 v1 = eigen2glm(pc.points_[i]), v2 = eigen2glm(pc.points_[j]);
+                    std::vector<glm::vec3> center;
+                    if (! get_center(v1, v2, v, r_now, center)) continue;
+                    auto center1 = center[0], center2 = center[1], unit_dir = center[2];
+                    if ((! valid_ball(center1, unit_dir, nor))
+                        && (! valid_ball(center2, -unit_dir, nor)))
+                        continue;
+                    Edges e1(p, i, j), e2(j, p, i), e3(i, j, p);
+                    triangles.push_back(p);
+                    triangles.push_back(i);
+                    triangles.push_back(j);
+                    front.act_edges.insert(e1);
+                    front.act_edges.insert(e2);
+                    front.act_edges.insert(e3);
+                    return 1;
+                }
+            }
+        }
+        return 0;
+    }
+    void pivot_ball(Edges & e) {
+        glm::vec3 mid       = eigen2glm((pc.points_[e.v1] + pc.points_[e.v2]) / 2.0);
+        auto      neighbors = grid.Get_Neighbor(mid, 2.0 * r_now);
+        auto      v1 = eigen2glm(pc.points_[e.v1]), v2 = eigen2glm(pc.points_[e.v2]);
+        for (uint32_t num : neighbors) {
+            if (num == e.v_op) continue;
+            auto                   vtx = eigen2glm(pc.points_[num]);
+            auto                   nor = eigen2glm(pc.normals_[num]);
+            std::vector<glm::vec3> center;
+            if (! get_center(v1, v2, vtx, r_now, center)) continue;
+            auto center1 = center[0], center2 = center[1], unit_dir = center[2];
+            if ((! valid_ball(center1, unit_dir, nor)) && (! valid_ball(center2, -unit_dir, nor)))
+                continue;
+            if (used_vtx.count(num)) {
+                Edges e1(num, e.v1, e.v2), e2(num, e.v2, e.v1);
+                if (front.act_edges.count(e1) || front.act_edges.count(e2)) {
+                    if (front.act_edges.count(e1)) front.act_edges.insert(e1);
+                    else front.act_edges.erase(e1);
+                    if (front.act_edges.count(e2)) front.act_edges.insert(e2);
+                    else front.act_edges.erase(e2);
+                }
+                triangles.push_back(num);
+                triangles.push_back(e.v1);
+                triangles.push_back(e.v2);
+                front.act_edges.erase(e);
+                return;
+            } else {
+                used_vtx.insert(num);
+                e.onfront = false;
+                e.tri     = 2;
+                Edges e1(num, e.v1, e.v2), e2(num, e.v2, e.v1);
+                front.act_edges.insert(e1);
+                front.act_edges.insert(e2);
+                triangles.push_back(num);
+                triangles.push_back(e.v1);
+                triangles.push_back(e.v2);
+                front.act_edges.erase(e);
+                return;
+            }
+        }
+        front.act_edges.erase(e);
+    }
+    void mesh() {
+        while (true) {
+            if (find_seed()) {
+                indx += 1;
+                if (indx < radii.size()) {
+                    r_now = radii[indx];
+                    grid.load(r_now, pc);
+                } else return;
+            }
+            while (front.act_edges.size()) {
+                auto e = *front.act_edges.begin();
+                pivot_ball(e);
+            }
+        }
+    }
 };
