@@ -17,5 +17,5 @@ void solve(
     const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
-    LibAlg(pc, mesh, 1);
+    BPA_run(pc, mesh);
 }
