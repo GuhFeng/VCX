@@ -27,36 +27,35 @@ struct Grid {
         for (auto p : pcd.points_) {
             auto v = eigen2glm(p);
             for (int i = 0; i < 3; i++) {
-                PMIN[i] = min(PMIN[i], v[i] - r - 1e-5);
-                PMAX[i] = max(PMAX[i], v[i] + r + 1e-5);
+                PMIN[i] = min(PMIN[i], v[i] - r * 2);
+                PMAX[i] = max(PMAX[i], v[i] + r * 2);
             }
         }
         for (int i = 0; i < 3; i++) this->n[i] = uint32_t((PMAX - PMIN)[i] / r);
         for (int i = 0; i < this->n[0]; i++) {
             for (int j = 0; j < this->n[1]; j++) {
                 for (int k = 0; k < this->n[2]; k++) {
-                    this->lst.emplace_back(std::vector<uint32_t>());
+                    this->lst.push_back(std::vector<uint32_t>());
                 }
             }
         }
-        for (int j = 0; j < pcd.points_.size(); j++) {
-            auto     v = eigen2glm(pcd.points_[j]);
+        for (int i = 0; i < pcd.points_.size(); i++) {
+            auto     v = eigen2glm(pcd.points_[i]);
             uint32_t m[3];
-            for (int i = 0; i < 3; i++) m[i] = uint32_t((v - PMIN)[i] / r);
-            this->lst[GET_INDX(m[0], m[1], m[2], this->n)].push_back(j);
+            for (int j = 0; j < 3; j++) m[j] = uint32_t((v - PMIN)[j] / r);
+            this->lst[GET_INDX(m[0], m[1], m[2], this->n)].push_back(i);
         }
     }
     std::vector<uint32_t> Get_Neighbor(glm::vec3 v, double rad) {
         uint32_t m[3];
         if (rad > r) printf("warning: the rad is too large!\n");
         for (int i = 0; i < 3; i++) m[i] = uint32_t((v - PMIN)[i] / r);
-        std::vector<uint32_t> lst_n, lst_n_tmp;
+        std::vector<uint32_t> lst_n, lst_2;
         for (int i = m[0] - 1; i < m[0] + 2; i++) {
             for (int j = m[1] - 1; j < m[1] + 2; j++) {
                 for (int k = m[2] - 1; k < m[2] + 2; k++) {
-                    if (this->lst[GET_INDX(i, j, k, this->n)].empty()) continue;
                     for (int cnt = 0; cnt < this->lst[GET_INDX(i, j, k, this->n)].size(); cnt++) {
-                        lst_n_tmp.push_back(this->lst[GET_INDX(i, j, k, this->n)][cnt]);
+                        lst_2.push_back(this->lst[GET_INDX(i, j, k, this->n)][cnt]);
                         if (glm::length(
                                 v
                                 - eigen2glm(
@@ -100,8 +99,10 @@ struct Vertex {
     uint32_t used;
     uint32_t intern;
     uint32_t boundary;
+    uint32_t cnt;
     Vertex(uint32_t inx) {
         indx     = inx;
+        cnt      = 0;
         front    = 0;
         used     = 0;
         intern   = 0;
@@ -255,8 +256,7 @@ struct BPA {
             while (front.act_edges.size() > 0) {
                 auto     e  = *front.act_edges.begin();
                 uint32_t pk = pivot_ball(e);
-                if ((pk != -1) && ((! vtx[pk].used) || vtx[pk].front)) {
-                    printf("pk:%d\n", pk);
+                if ((pk != -1) && ((! vtx[pk].used) || (vtx[pk].front))) {
                     triangles.push_back(e.v1);
                     triangles.push_back(pk);
                     triangles.push_back(e.v2);
