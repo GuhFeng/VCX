@@ -27,8 +27,8 @@ struct Grid {
         for (auto p : pcd.points_) {
             auto v = eigen2glm(p);
             for (int i = 0; i < 3; i++) {
-                PMIN[i] = min(PMIN[i], v[i] - r - 1e-5);
-                PMAX[i] = max(PMAX[i], v[i] + r + 1e-5);
+                PMIN[i] = min(PMIN[i], v[i]);
+                PMAX[i] = max(PMAX[i], v[i]);
             }
         }
         for (int i = 0; i < 3; i++) this->n[i] = uint32_t((PMAX - PMIN)[i] / r);
@@ -73,41 +73,28 @@ struct Grid {
 
 struct Edges {
     uint32_t v1, v2, v_op;
-    uint32_t active;
-    Edges() { active = 1; }
+    uint32_t tri, onfront;
+    Edges() {
+        tri     = 1;
+        onfront = 1;
+    }
     Edges(uint32_t p1, uint32_t p2, uint32_t po) {
-        v1     = p1;
-        v2     = p2;
-        v_op   = po;
-        active = 1;
+        v1      = p1;
+        v2      = p2;
+        v_op    = po;
+        tri     = 1;
+        onfront = 1;
     }
     bool operator<(const Edges & e) const {
-        if (v1 != e.v1) return v1 < e.v1;
-        return v2 < e.v2;
+        if ((v1 + v2) != (e.v1 + e.v2)) return (v1 + v2) < (e.v1 + e.v2);
+        if (abs(int(v1 - v2)) != abs(int(e.v1 - e.v2)))
+            return abs(int(v1 - v2)) < abs(int(e.v1 - e.v2));
+        return v_op < e.v_op;
     }
-    bool operator==(const Edges & e) const { return (v1 == e.v1) && (v2 == e.v2); }
 };
 
 struct Front {
     std::set<Edges> act_edges;
-    std::set<Edges> edges;
-};
-
-struct Vertex {
-    uint32_t indx;
-    uint32_t front;
-    uint32_t num_ref;
-    uint32_t used;
-    uint32_t intern;
-    uint32_t boundary;
-    Vertex(uint32_t inx) {
-        indx     = inx;
-        front    = 0;
-        used     = 0;
-        intern   = 0;
-        num_ref  = 0;
-        boundary = 0;
-    }
 };
 
 bool get_center(
@@ -131,42 +118,35 @@ bool get_center(
         double t     = glm::sin(theta) * r;
         center.push_back(v0 + n * glm::vec3(t));
         center.push_back(v0 - n * glm::vec3(t));
-        center.push_back(n); // c2->v0->c1
+        center.push_back(n);
         return 1;
     }
     return 0;
 }
 
 struct BPA {
-    Front                  front;
-    std::vector<uint32_t>  triangles;
-    std::vector<double>    radii;
-    double                 r_now;
-    uint32_t               indx;
-    Grid                   grid;
-    PCD_t &                pc;
-    std::vector<Vertex>    vtx;
-    std::vector<glm::vec3> Pos;
-    std::vector<glm::vec3> Nor;
+    std::set<uint32_t>    used_vtx;
+    Front                 front;
+    std::vector<uint32_t> triangles;
+    std::vector<double>   radii;
+    double                r_now;
+    uint32_t              indx;
+    Grid                  grid;
+    PCD_t &               pc;
     BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) {
         r_now = r[0];
         indx  = 0;
-        for (auto v : pcd.points_) Pos.push_back(eigen2glm(v));
-        for (auto nor : pcd.points_) Nor.push_back(eigen2glm(nor));
-        for (int i = 0; i < pcd.points_.size(); i++) vtx.push_back(Vertex(i));
-        grid.load(r_now * 2.0, pcd);
+        grid.load(2.0 * r_now, pcd);
     }
-
-    bool valid_ball(glm::vec3 c, glm::vec3 nor, glm::vec3 dir) {
+    bool valid_ball(glm::vec3 c, glm::vec3 dir, glm::vec3 norm) {
         auto neibors = grid.Get_Neighbor(c, r_now);
-        if (neibors.size() == 3 && glm::dot(nor, dir) >= 0) return 1;
+        if (neibors.size() == 3 && dot(dir, norm) <= 0) return 1;
         return 0;
     }
-
     bool find_seed() {
         for (int p = 0; p < pc.points_.size(); p++) {
             glm::vec3 v = eigen2glm(pc.points_[p]), nor = eigen2glm(pc.normals_[p]);
-            if (vtx[p].front || vtx[p].intern || vtx[p].used) continue;
+            if (used_vtx.count(p)) continue;
             auto neibors = grid.Get_Neighbor(v, 2.0 * r_now);
             for (int i = 0; i < neibors.size(); i++) {
                 for (int j = i + 1; j < neibors.size(); j++) {
@@ -180,98 +160,80 @@ struct BPA {
                     if ((! valid_ball(center1, unit_dir, nor))
                         && (! valid_ball(center2, -unit_dir, nor)))
                         continue;
-                    Edges e1(p, p1, p2), e2(p2, p, p1), e3(p1, p2, p);
+                    Edges e1(p, p1, p2), e2(p1, p, p2), e3(p1, p2, p);
                     triangles.push_back(p);
                     triangles.push_back(p1);
                     triangles.push_back(p2);
                     front.act_edges.insert(e1);
                     front.act_edges.insert(e2);
                     front.act_edges.insert(e3);
-                    front.edges.insert(e1);
-                    front.edges.insert(e2);
-                    front.edges.insert(e3);
-                    vtx[p].front += 1;
-                    vtx[p1].front += 1;
-                    vtx[p2].front += 1;
-                    vtx[p].num_ref += 2;
-                    vtx[p1].num_ref += 2;
-                    vtx[p2].num_ref += 2;
+                    used_vtx.insert(p);
+                    used_vtx.insert(p1);
+                    used_vtx.insert(p2);
                     return 1;
                 }
             }
-            vtx[p].used = 1;
+            used_vtx.insert(p);
         }
         return 0;
     }
-
-    uint32_t pivot_ball(Edges e) {
+    void pivot_ball(Edges & e) {
         glm::vec3 mid       = eigen2glm((pc.points_[e.v1] + pc.points_[e.v2]) / 2.0);
         auto      neighbors = grid.Get_Neighbor(mid, 2.0 * r_now);
         auto      v1 = eigen2glm(pc.points_[e.v1]), v2 = eigen2glm(pc.points_[e.v2]);
-        for (auto nbr : neighbors) {
-            if (nbr == e.v1 || nbr == e.v2 || nbr == e.v_op) continue;
-            auto vk = eigen2glm(pc.points_[nbr]), nk = eigen2glm(pc.normals_[nbr]);
-            std::vector<glm::vec3> centers;
-            if (get_center(v1, v2, vk, r_now, centers)) {
-                auto center1 = centers[0], center2 = centers[1], dir = centers[2];
-                if (valid_ball(center1, nk, dir) || valid_ball(center2, nk, -dir)) { return nbr; }
+        for (uint32_t num : neighbors) {
+            if (num == e.v_op || num == e.v1 || num == e.v2) continue;
+            auto                   vtx = eigen2glm(pc.points_[num]);
+            auto                   nor = eigen2glm(pc.normals_[num]);
+            std::vector<glm::vec3> center;
+            if (! get_center(v1, v2, vtx, r_now, center)) continue;
+            auto center1 = center[0], center2 = center[1], unit_dir = center[2];
+            if ((! valid_ball(center1, unit_dir, nor)) && (! valid_ball(center2, -unit_dir, nor)))
+                continue;
+            if (used_vtx.count(num)) {
+                Edges e1(num, e.v1, e.v2), e2(num, e.v2, e.v1);
+                if (front.act_edges.count(e1) || front.act_edges.count(e2)) {
+                    if (front.act_edges.count(e1)) front.act_edges.insert(e1);
+                    else front.act_edges.erase(e1);
+                    if (front.act_edges.count(e2)) front.act_edges.insert(e2);
+                    else front.act_edges.erase(e2);
+                    triangles.push_back(num);
+                    triangles.push_back(e.v1);
+                    triangles.push_back(e.v2);
+                    front.act_edges.erase(e);
+                    return;
+                }
+                front.act_edges.erase(e);
+            } else {
+                used_vtx.insert(num);
+                Edges e1(num, e.v1, e.v2), e2(num, e.v2, e.v1);
+                front.act_edges.insert(e1);
+                front.act_edges.insert(e2);
+                triangles.push_back(num);
+                triangles.push_back(e.v1);
+                triangles.push_back(e.v2);
+                front.act_edges.erase(e);
+                return;
             }
         }
-        return -1;
-    }
-
-    void join(Edges e, uint32_t pk) {
-        front.act_edges.insert(Edges(e.v1, pk, e.v2));
-        front.edges.insert(Edges(e.v1, pk, e.v2));
-        front.act_edges.insert(Edges(pk, e.v2, e.v1));
-        front.edges.insert(Edges(pk, e.v2, e.v1));
-        front.edges.erase(e);
         front.act_edges.erase(e);
-        vtx[pk].front = 1;
-        vtx[pk].num_ref += 2;
     }
-
-    void glue(Edges e1, Edges e2) {
-        if (e1.v1 != e2.v2 || e1.v2 != e2.v1) printf("Warning: can't glue!\n");
-        auto v1 = e1.v1, v2 = e2.v2;
-        vtx[v1].num_ref -= 2;
-        vtx[v2].num_ref -= 2;
-        if (vtx[v1].num_ref == 0) {
-            vtx[v1].intern = 1;
-            vtx[v1].front  = 0;
-        }
-        if (vtx[v2].num_ref == 0) {
-            vtx[v2].intern = 1;
-            vtx[v2].front  = 0;
-        }
-        front.edges.erase(e1);
-        if (front.act_edges.count(e1)) front.act_edges.erase(e1);
-        front.edges.erase(e2);
-        if (front.act_edges.count(e2)) front.act_edges.erase(e2);
-    }
-
     void mesh() {
         while (true) {
-            while (front.act_edges.size() > 0) {
-                auto     e  = *front.act_edges.begin();
-                uint32_t pk = pivot_ball(e);
-                if ((pk != -1) && ((! vtx[pk].used) || vtx[pk].front)) {
-                    printf("pk:%d\n", pk);
-                    triangles.push_back(e.v1);
-                    triangles.push_back(pk);
-                    triangles.push_back(e.v2);
-                    join(e, pk);
-                    if (front.edges.count(Edges(pk, e.v1, 0))) {
-                        glue(Edges(pk, e.v1, 0), Edges(e.v1, pk, 0));
-                    }
-                    if (front.edges.count(Edges(e.v2, pk, 0))) {
-                        glue(Edges(pk, e.v2, 0), Edges(e.v2, pk, 0));
-                    }
+            if (! find_seed()) {
+                indx += 1;
+                if (indx < radii.size()) {
+                    r_now = radii[indx];
+                    grid.load(2.0 * r_now, pc);
                 } else {
-                    front.act_edges.erase(e);
+                    return;
                 }
             }
-            if (! find_seed()) return;
+            while (front.act_edges.size()) {
+                auto e = *front.act_edges.rbegin();
+                pivot_ball(e);
+            }
+            break;
         }
     }
 };

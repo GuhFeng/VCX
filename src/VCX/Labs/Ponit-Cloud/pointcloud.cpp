@@ -18,4 +18,5 @@ void solve(
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
     BPA_run(pc, mesh);
+    printf("%d %d\n", old.Indices.size(), mesh.Indices.size());
 }

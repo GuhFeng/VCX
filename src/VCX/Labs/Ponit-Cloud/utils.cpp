@@ -33,8 +33,7 @@ void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, 
         double avg_distance =
             std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
         double              rho = 1.25 * avg_distance / 2.0;
-        std::vector<double> radii { 0.05 * rho, 0.1 * rho, 0.2 * rho, 0.5 * rho,
-                                    rho,        2.0 * rho, 4.0 * rho, 8 * rho };
+        std::vector<double> radii { 2.0 * rho };
         m = m->CreateFromPointCloudBallPivoting(pc, radii);
     } else {
         m = std::get<0>(m->CreateFromPointCloudPoisson(pc));
