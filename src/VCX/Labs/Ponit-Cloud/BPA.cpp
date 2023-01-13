@@ -261,10 +261,10 @@ struct BPA {
                     triangles.push_back(pk);
                     triangles.push_back(e.v2);
                     join(e, pk);
-                    if (front.edges.count(Edges(pk, e.v1, 0))) {
+                    if (front.act_edges.count(Edges(pk, e.v1, 0))) {
                         glue(Edges(pk, e.v1, 0), Edges(e.v1, pk, 0));
                     }
-                    if (front.edges.count(Edges(e.v2, pk, 0))) {
+                    if (front.act_edges.count(Edges(e.v2, pk, 0))) {
                         glue(Edges(pk, e.v2, 0), Edges(e.v2, pk, 0));
                     }
                 } else {
