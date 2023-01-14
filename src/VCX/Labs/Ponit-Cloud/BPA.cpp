@@ -89,26 +89,23 @@ struct Edges {
 
 struct Front {
     std::set<Edges> act_edges;
-    std::set<Edges> edges;
+    std::set<Edges> Boundary;
 };
 
 struct Vertex {
     uint32_t indx;
-    uint32_t front;
-    uint32_t num_ref;
     uint32_t used;
+    uint32_t ref;
+    uint32_t active;
     uint32_t intern;
-    uint32_t boundary;
-    uint32_t cnt;
     Vertex(uint32_t inx) {
-        indx     = inx;
-        cnt      = 0;
-        front    = 0;
-        used     = 0;
-        intern   = 0;
-        num_ref  = 0;
-        boundary = 0;
+        indx   = inx;
+        used   = 0;
+        ref    = 0;
+        active = 0;
+        intern = 0;
     }
+    bool operator<(const Vertex & v) const { return indx < v.indx; }
 };
 
 bool get_center(
@@ -167,7 +164,7 @@ struct BPA {
     bool find_seed() {
         for (int p = 0; p < pc.points_.size(); p++) {
             glm::vec3 v = eigen2glm(pc.points_[p]), nor = eigen2glm(pc.normals_[p]);
-            if (vtx[p].front || vtx[p].intern || vtx[p].used) continue;
+            if (vtx[p].used) continue;
             auto neibors = grid.Get_Neighbor(v, 2.0 * r_now);
             for (int i = 0; i < neibors.size(); i++) {
                 for (int j = i + 1; j < neibors.size(); j++) {
@@ -188,15 +185,15 @@ struct BPA {
                     front.act_edges.insert(e1);
                     front.act_edges.insert(e2);
                     front.act_edges.insert(e3);
-                    front.edges.insert(e1);
-                    front.edges.insert(e2);
-                    front.edges.insert(e3);
-                    vtx[p].front += 1;
-                    vtx[p1].front += 1;
-                    vtx[p2].front += 1;
-                    vtx[p].num_ref += 2;
-                    vtx[p1].num_ref += 2;
-                    vtx[p2].num_ref += 2;
+                    vtx[p].used    = 1;
+                    vtx[p1].used   = 1;
+                    vtx[p2].used   = 1;
+                    vtx[p].ref     = 2;
+                    vtx[p1].ref    = 2;
+                    vtx[p2].ref    = 2;
+                    vtx[p].active  = 1;
+                    vtx[p1].active = 1;
+                    vtx[p2].active = 1;
                     return 1;
                 }
             }
@@ -223,40 +220,37 @@ struct BPA {
 
     void join(Edges e, uint32_t pk) {
         front.act_edges.insert(Edges(e.v1, pk, e.v2));
-        front.edges.insert(Edges(e.v1, pk, e.v2));
         front.act_edges.insert(Edges(pk, e.v2, e.v1));
-        front.edges.insert(Edges(pk, e.v2, e.v1));
-        front.edges.erase(e);
         front.act_edges.erase(e);
-        vtx[pk].front = 1;
-        vtx[pk].num_ref += 2;
+        vtx[pk].active = 1;
+        vtx[pk].used   = 1;
+        vtx[pk].ref += 2;
     }
 
     void glue(Edges e1, Edges e2) {
         if (e1.v1 != e2.v2 || e1.v2 != e2.v1) printf("Warning: can't glue!\n");
         auto v1 = e1.v1, v2 = e2.v2;
-        vtx[v1].num_ref -= 2;
-        vtx[v2].num_ref -= 2;
-        if (vtx[v1].num_ref == 0) {
+        vtx[v1].ref -= 2;
+        vtx[v2].ref -= 2;
+        if (vtx[v1].ref <= 0) {
             vtx[v1].intern = 1;
-            vtx[v1].front  = 0;
+            vtx[v1].active = 0;
         }
-        if (vtx[v2].num_ref == 0) {
+        if (vtx[v2].ref <= 0) {
             vtx[v2].intern = 1;
-            vtx[v2].front  = 0;
+            vtx[v2].active = 0;
         }
-        front.edges.erase(e1);
-        if (front.act_edges.count(e1)) front.act_edges.erase(e1);
-        front.edges.erase(e2);
-        if (front.act_edges.count(e2)) front.act_edges.erase(e2);
+        front.act_edges.erase(e1);
+        front.act_edges.erase(e2);
     }
 
     void mesh() {
+        int i = 1;
         while (true) {
             while (front.act_edges.size() > 0) {
                 auto     e  = *front.act_edges.begin();
                 uint32_t pk = pivot_ball(e);
-                if ((pk != -1) && ((! vtx[pk].used) || (vtx[pk].front))) {
+                if ((pk != -1) && ((! vtx[pk].used) || (vtx[pk].active))) {
                     triangles.push_back(e.v1);
                     triangles.push_back(pk);
                     triangles.push_back(e.v2);
@@ -269,9 +263,12 @@ struct BPA {
                     }
                 } else {
                     front.act_edges.erase(e);
+                    front.Boundary.insert(e);
                 }
             }
             if (! find_seed()) return;
+            i++;
+            if (i == 3) { return; }
         }
     }
 };
@@ -281,7 +278,7 @@ void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh)
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
     double              rho = 1.25 * avg_distance / 2.0;
-    std::vector<double> radii { rho * 2.0 };
+    std::vector<double> radii { 5 * rho };
     BPA                 bpa(pc, radii);
     bpa.mesh();
     printf("finish\n");
