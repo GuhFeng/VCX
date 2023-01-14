@@ -28,8 +28,8 @@ struct Edge {
     uint32_t indx1, indx2, indx_op;
     uint32_t onfront, triangles;
     Edge(uint32_t p1, uint32_t p2, uint32_t po) {
-        indx1     = p1;
-        indx2     = p2;
+        indx1     = max(p1, p2);
+        indx2     = min(p1, p2);
         indx_op   = po;
         onfront   = 1;
         triangles = 1;
@@ -224,6 +224,7 @@ struct BPA {
                     triangles.push_back(Triangle(e.indx1, e.indx2, indx));
                     front.active_edge.erase(e);
                     return 1;
+                } else {
                 }
             } else {
                 used_vertex[indx] = Vertex(indx);
