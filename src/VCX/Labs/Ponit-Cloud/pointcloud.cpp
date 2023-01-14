@@ -17,5 +17,7 @@ void solve(
     const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
+    printf("%d\n", old.Positions.size());
     BPA_run(pc, mesh);
+    printf("%d %d %d\n", old.Positions.size(), old.Indices.size(), mesh.Indices.size());
 }
