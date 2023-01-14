@@ -21,4 +21,7 @@ void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, 
 
 glm::vec3       eigen2glm(Eigen::Vector3d a);
 Eigen::Vector3d glm2eigen(glm::vec3 a);
-void            BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh);
+void            BPA_run(
+               const VCX::Engine::SurfaceMesh & old,
+               open3d::geometry::PointCloud &   pc,
+               VCX::Engine::SurfaceMesh &       mesh);
