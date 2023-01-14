@@ -1,3 +1,18 @@
+#include "Engine/SurfaceMesh.h"
+#include "Labs/2-GeometryProcessing/DCEL.hpp"
+#include "pointcloud.h"
+#include "utils.h"
+#include <algorithm>
+#include <cmath>
+#include <glm/gtc/matrix_inverse.hpp>
+#include <iostream>
+#include <list>
+#include <map>
+#include <open3d/Open3D.h>
+#include <set>
+#include <spdlog/spdlog.h>
+#include <tuple>
+#include <unordered_set>
 struct Grid {
     double                             r;
     const PCD_t *                      pc;
