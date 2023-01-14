@@ -28,8 +28,8 @@ struct Edge {
     uint32_t indx1, indx2, indx_op;
     uint32_t onfront, triangles;
     Edge(uint32_t p1, uint32_t p2, uint32_t po) {
-        indx1     = max(p1, p2);
-        indx2     = min(p1, p2);
+        indx1     = p1;
+        indx2     = p2;
         indx_op   = po;
         onfront   = 1;
         triangles = 1;
@@ -49,15 +49,29 @@ struct Triangle {
         indx[0] = v1;
         indx[1] = v2;
         indx[2] = v3;
-        std::sort(indx, indx + 3);
-    }
-    bool operator==(const Triangle & t) const {
-        return (indx[0] == t.indx[0]) && (indx[1] == t.indx[1]) && (indx[2] == t.indx[2]);
     }
 };
 struct Front {
-    std::set<Edge>   active_edge;
-    std::set<Vertex> acitive_vertex;
+    std::set<Edge>          active_edge;
+    std::map<uint32_t, int> active_vertex;
+    void                    decrease(uint32_t p) {
+        active_vertex[p] -= 1;
+        if (active_vertex[p] == 0) active_vertex.erase(p);
+    }
+    void increase(uint32_t p) {
+        if (active_vertex.count(p)) active_vertex[p] += 1;
+        else active_vertex[p] = 1;
+    }
+    void add_edge(Edge e) {
+        active_edge.insert(e);
+        increase(e.indx1);
+        increase(e.indx2);
+    }
+    void delete_edge(Edge e) {
+        active_edge.erase(e);
+        decrease(e.indx1);
+        decrease(e.indx2);
+    }
 };
 struct Grid {
     double                             radii;
@@ -116,6 +130,7 @@ struct BPA {
     std::map<uint32_t, Vertex> used_vertex;
     Front                      front;
     std::vector<Triangle>      triangles;
+    std::set<Edge>             edges_used;
     double                     r;
     Grid                       grid;
     BPA(const VCX::Engine::SurfaceMesh & mesh, double rad) {
@@ -172,16 +187,16 @@ struct BPA {
                         used_vertex[p1] = Vertex(p1);
                         used_vertex[p2] = Vertex(p2);
                         used_vertex[p]  = Vertex(p);
-                        Edge e1(p1, p2, p), e2(p1, p, p2), e3(p, p2, p1);
+                        Edge e1(p2, p1, p), e2(p, p2, p1), e3(p1, p, p2);
                         used_vertex[p1].Edge.insert(e1);
                         used_vertex[p1].Edge.insert(e2);
                         used_vertex[p2].Edge.insert(e1);
                         used_vertex[p2].Edge.insert(e3);
                         used_vertex[p].Edge.insert(e3);
                         used_vertex[p].Edge.insert(e2);
-                        front.active_edge.insert(e1);
-                        front.active_edge.insert(e2);
-                        front.active_edge.insert(e3);
+                        front.add_edge(e1);
+                        front.add_edge(e2);
+                        front.add_edge(e3);
                         triangles.push_back(Triangle(p1, p2, p));
                         return 1;
                     }
@@ -209,23 +224,24 @@ struct BPA {
                 continue;
             }
             if (used_vertex.count(indx)) {
-                Edge e1(indx, e.indx1, e.indx2), e2(indx, e.indx2, e.indx1);
-                if (front.active_edge.count(e1) || front.active_edge.count(e2)) {
+                Edge e1(e.indx1, indx, e.indx2), e2(indx, e.indx2, e.indx1);
+                if (front.active_vertex.count(indx)) {
                     if (front.active_edge.count(e1)) {
-                        front.active_edge.erase(e1);
+                        front.delete_edge(e1);
                     } else {
-                        front.active_edge.insert(e1);
+                        front.add_edge(e1);
                     }
                     if (front.active_edge.count(e2)) {
-                        front.active_edge.erase(e2);
+                        front.delete_edge(e2);
                     } else {
-                        front.active_edge.insert(e2);
+                        front.add_edge(e2);
                     }
-                    triangles.push_back(Triangle(e.indx1, e.indx2, indx));
-                    front.active_edge.erase(e);
+                    triangles.push_back(Triangle(e.indx1, indx, e.indx2));
+                    front.delete_edge(e);
                     return 1;
                 } else {
-                    ; // TODO
+                    front.delete_edge(e);
+                    return 0;
                 }
             } else {
                 used_vertex[indx] = Vertex(indx);
@@ -234,14 +250,14 @@ struct BPA {
                 Edge e1(indx, e.indx1, e.indx2), e2(indx, e.indx2, e.indx1);
                 used_vertex[e.indx1].Edge.insert(e1);
                 used_vertex[e.indx2].Edge.insert(e2);
-                front.active_edge.insert(e1);
-                front.active_edge.insert(e2);
-                triangles.push_back(Triangle(e.indx1, e.indx2, indx));
-                front.active_edge.erase(e);
+                front.add_edge(e1);
+                front.add_edge(e2);
+                triangles.push_back(Triangle(e.indx2, e.indx1, indx));
+                front.delete_edge(e);
                 return 1;
             }
         }
-        front.active_edge.erase(e);
+        front.delete_edge(e);
         return 0;
     }
     void mesh() {
@@ -254,11 +270,17 @@ struct BPA {
             }
             while (front.active_edge.size()) {
                 auto e = *front.active_edge.begin();
+                if (edges_used.count(e)) {
+                    front.active_edge.erase(e);
+                    continue;
+                }
+                edges_used.insert(e);
                 if (pivot_ball(e)) {
                     num += 1;
                     if (num % 1000 == 0) { printf("%d %d\n", front.active_edge.size(), num); }
                 }
             }
+            break;
         }
     }
 };
