@@ -93,6 +93,22 @@ struct Front {
     std::set<Edges> Boundary;
 };
 
+struct Triangle {
+    uint32_t indx[3];
+    Triangle(uint32_t p1, uint32_t p2, uint32_t p3) {
+        indx[0] = p1;
+        indx[1] = p2;
+        indx[2] = p3;
+        std::sort(indx, indx + 3);
+    }
+    bool operator<(const Triangle & t) const {
+        for (int i = 0; i < 2; i++) {
+            if (indx[i] != t.indx[i]) return indx[i] < t.indx[i];
+        }
+        return indx[2] < t.indx[2];
+    }
+};
+
 struct Vertex {
     uint32_t           indx;
     uint32_t           state;
@@ -134,6 +150,7 @@ bool get_center(
 struct BPA {
     Front                  front;
     std::vector<uint32_t>  triangles;
+    std::set<Triangle>     Set_T;
     std::vector<double>    radii;
     double                 r_now;
     std::set<Edges>        used_edge;
@@ -175,10 +192,14 @@ struct BPA {
                     if ((! valid_ball(center1, unit_dir, nor))
                         && (! valid_ball(center2, -unit_dir, nor)))
                         continue;
-                    Edges e1(p, p1, p2), e2(p2, p, p1), e3(p1, p2, p);
-                    triangles.push_back(p);
-                    triangles.push_back(p1);
-                    triangles.push_back(p2);
+                    Edges    e1(p, p1, p2), e2(p2, p, p1), e3(p1, p2, p);
+                    Triangle trg(p, p1, p2);
+                    if (! Set_T.count(trg)) {
+                        triangles.push_back(p);
+                        triangles.push_back(p1);
+                        triangles.push_back(p2);
+                        Set_T.insert(trg);
+                    }
                     front.act_edges.insert(e1);
                     front.act_edges.insert(e2);
                     front.act_edges.insert(e3);
@@ -243,9 +264,13 @@ struct BPA {
                 }
                 uint32_t pk = pivot_ball(e);
                 if ((pk != -1) && ((vtx[pk].state == 0) || (vtx[pk].state == 1))) {
-                    triangles.push_back(e.v1);
-                    triangles.push_back(pk);
-                    triangles.push_back(e.v2);
+                    Triangle trg(e.v1, pk, e.v2);
+                    if (! Set_T.count(trg)) {
+                        triangles.push_back(e.v1);
+                        triangles.push_back(pk);
+                        triangles.push_back(e.v2);
+                        Set_T.insert(trg);
+                    }
                     join(e, pk);
                     if (front.act_edges.count(Edges(pk, e.v1, 0))) {
                         glue(Edges(pk, e.v1, 0), Edges(e.v1, pk, 0));
@@ -259,8 +284,6 @@ struct BPA {
                 }
             }
             if (! find_seed()) return;
-            i++;
-            if (i == 3) { return; }
         }
     }
 };

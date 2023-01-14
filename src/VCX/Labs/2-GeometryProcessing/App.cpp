@@ -27,9 +27,6 @@ namespace VCX::Labs::GeometryProcessing {
                                          {
                                              ExampleModel::Sphere,
                                              ExampleModel::Block,
-                                             ExampleModel::Dinosaur,
-                                             ExampleModel::Fandisk,
-                                             ExampleModel::Rocker,
                                              ExampleModel::Arma,
                                              ExampleModel::Bunny,
                                              ExampleModel::Tyra,
