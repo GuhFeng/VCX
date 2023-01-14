@@ -10,7 +10,6 @@
 #include <map>
 #include <open3d/Open3D.h>
 #include <set>
-#include <spdlog/spdlog.h>
 #include <tuple>
 #include <unordered_set>
 struct Grid {
