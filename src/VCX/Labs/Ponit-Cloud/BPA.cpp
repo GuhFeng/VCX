@@ -60,7 +60,7 @@ struct Grid {
                                 v
                                 - eigen2glm(
                                     pc->points_[this->lst[GET_INDX(i, j, k, this->n)][cnt]]))
-                            <= rad + 1e-6)
+                            <= rad + 1e-8)
                             lst_n.push_back(this->lst[GET_INDX(i, j, k, this->n)][cnt]);
                     }
                 }
@@ -169,7 +169,7 @@ struct BPA {
     }
 
     bool valid_ball(glm::vec3 c, glm::vec3 nor, glm::vec3 dir) {
-        auto neibors = grid.Get_Neighbor(c, r_now - 1e-5);
+        auto neibors = grid.Get_Neighbor(c, r_now - 1e-7);
         if (neibors.size() == 0 && glm::dot(nor, dir) >= 0) return 1;
         return 0;
     }
@@ -251,7 +251,6 @@ struct BPA {
     }
 
     void mesh() {
-        int i = 1;
         while (true) {
             while (front.act_edges.size() > 0) {
                 auto e = *front.act_edges.begin();
@@ -282,7 +281,7 @@ struct BPA {
                     front.Boundary.insert(e);
                 }
             }
-            if (! find_seed()) return;
+            if (! find_seed()) { return; }
         }
     }
 };
@@ -292,7 +291,7 @@ void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh)
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
     double              rho = 1.25 * avg_distance / 2.0;
-    std::vector<double> radii { 2 * rho };
+    std::vector<double> radii { 5 * rho };
     BPA                 bpa(pc, radii);
     bpa.mesh();
     printf("finish\n");
