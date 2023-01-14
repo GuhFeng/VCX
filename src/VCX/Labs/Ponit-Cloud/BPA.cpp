@@ -152,7 +152,7 @@ struct BPA {
     }
     bool valid_center(glm::vec3 center, glm::vec3 dir, glm::vec3 nor) {
         auto neibors = grid.Get_Neighbor(center, r - 1e-5);
-        if ((neibors.size() == 3) && (glm::dot(nor, dir) >= 0.0)) return 1;
+        if ((neibors.size() == 0) && (glm::dot(nor, dir) >= 0.0)) return 1;
         return 0;
     }
     bool find_seed() {
@@ -164,6 +164,11 @@ struct BPA {
                     auto                   p1 = neibors[j], p2 = neibors[k], p = (uint32_t) i;
                     std::vector<glm::vec3> centers;
                     if (get_center(posi[p1], posi[p2], posi[p], r, centers)) {
+                        auto neibors0 = grid.Get_Neighbor(centers[0], r - 1e-5);
+                        auto neibors1 = grid.Get_Neighbor(centers[1], r - 1e-5);
+                        bool b1       = (neibors0.size() == 0);
+                        bool b2       = (neibors1.size() == 0);
+                        if (! b1 && ! b2) continue;
                         used_vertex[p1] = Vertex(p1);
                         used_vertex[p2] = Vertex(p2);
                         used_vertex[p]  = Vertex(p);
@@ -183,8 +188,8 @@ struct BPA {
                 }
             }
             used_vertex[i] = Vertex(i);
-            return 0;
         }
+        return 0;
     }
     bool pivot_ball(Edge e) {
         auto p1 = posi[e.indx1], p2 = posi[e.indx2];
@@ -252,7 +257,6 @@ struct BPA {
                     if (num % 1000 == 0) { printf("%d %d\n", front.active_edge.size(), num); }
                 }
             }
-            break;
         }
     }
 };
@@ -261,8 +265,7 @@ void BPA_run(
     const VCX::Engine::SurfaceMesh & old,
     open3d::geometry::PointCloud &   pc,
     VCX::Engine::SurfaceMesh &       mesh) {
-    auto distances = pc.ComputeNearestNeighborDistance();
-
+    auto   distances = pc.ComputeNearestNeighborDistance();
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
     double              rho = 1.25 * avg_distance / 2.0;
