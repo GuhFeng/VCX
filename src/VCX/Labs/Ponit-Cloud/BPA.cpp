@@ -224,7 +224,8 @@ struct BPA {
                     triangles.push_back(Triangle(e.indx1, e.indx2, indx));
                     front.active_edge.erase(e);
                     return 1;
-                } else { // TODO
+                } else {
+                    ; // TODO
                 }
             } else {
                 used_vertex[indx] = Vertex(indx);
