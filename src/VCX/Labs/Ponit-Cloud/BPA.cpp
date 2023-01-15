@@ -72,13 +72,11 @@ struct Grid {
 
 struct Edges {
     uint32_t v1, v2, v_op;
-    uint32_t active;
-    Edges() { active = 1; }
+    Edges() {}
     Edges(uint32_t p1, uint32_t p2, uint32_t po) {
-        v1     = p1;
-        v2     = p2;
-        v_op   = po;
-        active = 1;
+        v1   = p1;
+        v2   = p2;
+        v_op = po;
     }
     bool operator<(const Edges & e) const {
         if (v1 != e.v1) return v1 < e.v1;
@@ -89,7 +87,6 @@ struct Edges {
 
 struct Front {
     std::set<Edges> act_edges;
-    std::set<Edges> Boundary;
 };
 
 struct Triangle {
@@ -147,23 +144,19 @@ bool get_center(
 }
 
 struct BPA {
-    Front                  front;
-    std::vector<uint32_t>  triangles;
-    std::set<Triangle>     Set_T;
-    std::vector<double>    radii;
-    double                 r_now;
-    std::set<Edges>        used_edge;
-    uint32_t               indx;
-    Grid                   grid;
-    PCD_t &                pc;
-    std::vector<Vertex>    vtx;
-    std::vector<glm::vec3> Pos;
-    std::vector<glm::vec3> Nor;
+    Front                 front;
+    std::vector<uint32_t> triangles;
+    std::set<Triangle>    Set_T;
+    std::vector<double>   radii;
+    double                r_now;
+    std::set<Edges>       used_edge;
+    uint32_t              indx;
+    Grid                  grid;
+    PCD_t &               pc;
+    std::vector<Vertex>   vtx;
     BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) {
         r_now = r[0];
         indx  = 0;
-        for (auto v : pcd.points_) Pos.push_back(eigen2glm(v));
-        for (auto nor : pcd.points_) Nor.push_back(eigen2glm(nor));
         for (int i = 0; i < pcd.points_.size(); i++) vtx.push_back(Vertex(i));
         grid.load(r_now * 2.0, pcd);
     }
@@ -224,13 +217,14 @@ struct BPA {
         auto      neighbors = grid.Get_Neighbor(mid, 2.0 * r_now);
         auto      v1 = eigen2glm(pc.points_[e.v1]), v2 = eigen2glm(pc.points_[e.v2]);
         int       cnt = 0;
+        if (! neighbors.size()) return -1;
         for (auto nbr : neighbors) {
             if (nbr == e.v1 || nbr == e.v2 || nbr == e.v_op) continue;
             auto vk = eigen2glm(pc.points_[nbr]), nk = eigen2glm(pc.normals_[nbr]);
             std::vector<glm::vec3> centers;
             if (get_center(v1, v2, vk, r_now, centers)) {
                 auto center1 = centers[0], center2 = centers[1], dir = centers[2];
-                if (valid_ball(center1, nk, dir) || valid_ball(center2, nk, -dir)) { return nbr; }
+                if (valid_ball(center1, nk, dir) || valid_ball(center2, -nk, dir)) { return nbr; }
             }
         }
         return -1;
@@ -278,7 +272,6 @@ struct BPA {
                     }
                 } else {
                     front.act_edges.erase(e);
-                    front.Boundary.insert(e);
                 }
             }
             if (! find_seed()) { return; }
@@ -291,7 +284,7 @@ void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh)
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
     double              rho = 1.25 * avg_distance / 2.0;
-    std::vector<double> radii { 5.0 * rho };
+    std::vector<double> radii { 4.0 * rho };
     BPA                 bpa(pc, radii);
     bpa.mesh();
     printf("finish\n");
