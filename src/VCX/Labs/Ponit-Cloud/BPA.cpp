@@ -288,7 +288,7 @@ void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh,
     std::vector<double> radii { size[indx] * rho };
     BPA                 bpa(pc, radii);
     bpa.mesh();
-    printf("finish\n");
+    printf("Reconstruction Finish!\n");
     mesh.Indices = bpa.triangles;
     for (auto v : pc.points_) { mesh.Positions.push_back(glm::vec3(1)); }
     for (int i = 0; i < pc.points_.size(); i++) { mesh.Positions[i] = eigen2glm(pc.points_[i]); }
