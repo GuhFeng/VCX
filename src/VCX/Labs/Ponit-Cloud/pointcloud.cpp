@@ -16,10 +16,12 @@
 void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, int radii) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
+    printf("Reconstruction Begin!\n");
     BPA_run(pc, mesh, radii);
     printf(
         "Number of Points: %d\nNumber of Original Triangles: %d\nNumber of Reconstructed Triangles: %d\n",
         old.Positions.size(),
         old.Indices.size(),
         mesh.Indices.size());
+    printf("Reconstruction Finish!\n");
 }

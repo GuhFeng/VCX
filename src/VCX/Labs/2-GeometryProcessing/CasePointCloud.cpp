@@ -35,6 +35,10 @@ namespace VCX::Labs::GeometryProcessing {
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
         _recompute |= ImGui::SliderInt("Radii", &_radii, 0, 3);
+        if (_running) {
+            static const std::string t = "Running.....";
+            ImGui::Text(t.substr(0, 7 + (static_cast<int>(ImGui::GetTime() / 0.1f) % 6)).c_str());
+        } else ImGui::NewLine();
         ImGui::Spacing();
         Viewer::SetupRenderOptionsUI(_options, _cameraManager);
     }
