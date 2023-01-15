@@ -12,7 +12,7 @@
 #include <spdlog/spdlog.h>
 #include <tuple>
 #include <unordered_set>
-// #define LibImplement
+// #define LibImplement //Remove this macro, then the code use my implement of BPA.
 
 void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, int radii) {
     open3d::geometry::PointCloud pc;
@@ -24,10 +24,10 @@ void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
     double rho     = 1.25 * avg_distance / 2.0;
     float  size[4] = { 0.5, 1.0, 2.0, 4.0 };
-#ifndef LibImplement
-    BPA_run(pc, mesh, size[radii] * rho);
-#else
+#ifdef LibImplement
     LibAlg(pc, mesh, size[radii] * rho);
+#else
+    BPA_run(pc, mesh, size[radii] * rho);
 #endif
     printf(
         "Number of Points: %d\nNumber of Original Triangles: %d\nNumber of Reconstructed Triangles: %d\n",
