@@ -29,6 +29,7 @@ namespace VCX::Labs::GeometryProcessing {
         bool                               _running { false };
         ModelObject                        _modelObject;
         RenderOptions                      _options;
+        int                                _radii { 2 };
         int                                _numIterations { 0 };
         char *                             _path { 0 };
 

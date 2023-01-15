@@ -278,13 +278,14 @@ struct BPA {
         }
     }
 };
-void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh) {
+void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int indx) {
     auto distances = pc.ComputeNearestNeighborDistance();
 
     double avg_distance =
         std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
-    double              rho = 1.25 * avg_distance / 2.0;
-    std::vector<double> radii { 4.0 * rho };
+    double              rho     = 1.25 * avg_distance / 2.0;
+    float               size[4] = { 0.5, 1.0, 2.0, 4.0 };
+    std::vector<double> radii { size[indx] * rho };
     BPA                 bpa(pc, radii);
     bpa.mesh();
     printf("finish\n");

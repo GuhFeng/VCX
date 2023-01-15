@@ -29,5 +29,5 @@ namespace VCX::Labs::GeometryProcessing {
         const glm::vec3 &                               grid_min,
         const float                                     dx,
         const int                                       n);
-    void PointCloud(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, const char * path);
+    void PointCloud(const Engine::SurfaceMesh & old, Engine::SurfaceMesh & mesh, int path);
 }

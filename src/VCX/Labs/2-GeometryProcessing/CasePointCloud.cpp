@@ -34,6 +34,8 @@ namespace VCX::Labs::GeometryProcessing {
         }
         Common::ImGuiHelper::SaveImage(_viewer.GetTexture(), _viewer.GetSize(), true);
         ImGui::Spacing();
+        _recompute |= ImGui::SliderInt("Radii", &_radii, 0, 3);
+        ImGui::Spacing();
         Viewer::SetupRenderOptionsUI(_options, _cameraManager);
     }
 
@@ -43,7 +45,7 @@ namespace VCX::Labs::GeometryProcessing {
             _recompute = false;
             _task.Emplace([&]() {
                 Engine::SurfaceMesh emptyMesh;
-                PointCloud(GetModelMesh(_modelIdx), emptyMesh, _path);
+                PointCloud(GetModelMesh(_modelIdx), emptyMesh, _radii);
                 return emptyMesh;
             });
             _running = true;

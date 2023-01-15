@@ -13,11 +13,10 @@
 #include <tuple>
 #include <unordered_set>
 
-void solve(
-    const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, const char * path) {
+void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, int radii) {
     open3d::geometry::PointCloud pc;
     Mesh2PC(old, pc);
     printf("%d\n", old.Positions.size());
-    BPA_run(pc, mesh);
+    BPA_run(pc, mesh, radii);
     printf("%d %d %d\n", old.Positions.size(), old.Indices.size(), mesh.Indices.size());
 }
