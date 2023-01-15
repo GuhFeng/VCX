@@ -26,18 +26,10 @@ void LoadData(open3d::geometry::PointCloud & pc, const std::string path) {
     open3d::io::ReadPointCloudFromPCD(path, pc, po);
 }
 
-void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int type = 0) {
+void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, double r) {
     std::shared_ptr<open3d::geometry::TriangleMesh> m(new open3d::geometry::TriangleMesh());
-    if (type == 0) {
-        auto   distances = pc.ComputeNearestNeighborDistance();
-        double avg_distance =
-            std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
-        double              rho = 1.25 * avg_distance / 2.0;
-        std::vector<double> radii { 2.0 * rho };
-        m = m->CreateFromPointCloudBallPivoting(pc, radii);
-    } else {
-        m = std::get<0>(m->CreateFromPointCloudPoisson(pc));
-    }
+    std::vector<double>                             radii { r };
+    m = m->CreateFromPointCloudBallPivoting(pc, radii);
     for (auto tri : m->triangles_) {
         mesh.Indices.push_back(tri.x());
         mesh.Indices.push_back(tri.y());

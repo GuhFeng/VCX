@@ -17,8 +17,8 @@ void Mesh2PC(const VCX::Engine::SurfaceMesh & mesh, open3d::geometry::PointCloud
 
 void LoadData(open3d::geometry::PointCloud & pc, const std::string path);
 
-void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int type = 0);
+void LibAlg(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, double r);
 
 glm::vec3       eigen2glm(Eigen::Vector3d a);
 Eigen::Vector3d glm2eigen(glm::vec3 a);
-void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int indx);
+void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, double r);

@@ -147,16 +147,14 @@ struct BPA {
     Front                 front;
     std::vector<uint32_t> triangles;
     std::set<Triangle>    Set_T;
-    std::vector<double>   radii;
     double                r_now;
     std::set<Edges>       used_edge;
     uint32_t              indx;
     Grid                  grid;
     PCD_t &               pc;
     std::vector<Vertex>   vtx;
-    BPA(PCD_t & pcd, std::vector<double> & r): radii(r), pc(pcd) {
-        r_now = r[0];
-        indx  = 0;
+    BPA(PCD_t & pcd, double & r): r_now(r), pc(pcd) {
+        indx = 0;
         for (int i = 0; i < pcd.points_.size(); i++) vtx.push_back(Vertex(i));
         grid.load(r_now * 2.0, pcd);
     }
@@ -278,15 +276,8 @@ struct BPA {
         }
     }
 };
-void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, int indx) {
-    auto distances = pc.ComputeNearestNeighborDistance();
-
-    double avg_distance =
-        std::accumulate(distances.begin(), distances.end(), 0.0) / distances.size();
-    double              rho     = 1.25 * avg_distance / 2.0;
-    float               size[4] = { 0.5, 1.0, 2.0, 4.0 };
-    std::vector<double> radii { size[indx] * rho };
-    BPA                 bpa(pc, radii);
+void BPA_run(open3d::geometry::PointCloud & pc, VCX::Engine::SurfaceMesh & mesh, double r) {
+    BPA bpa(pc, r);
     bpa.mesh();
     mesh.Indices = bpa.triangles;
     for (auto v : pc.points_) { mesh.Positions.push_back(glm::vec3(1)); }
