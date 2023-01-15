@@ -12,7 +12,7 @@
 #include <spdlog/spdlog.h>
 #include <tuple>
 #include <unordered_set>
-// #define LibImplement //Remove this macro, then the code use my implement of BPA.
+// #define LibImplement // Remove this macro, then the code use my implement of BPA.
 
 void solve(const VCX::Engine::SurfaceMesh & old, VCX::Engine::SurfaceMesh & mesh, int radii) {
     open3d::geometry::PointCloud pc;
